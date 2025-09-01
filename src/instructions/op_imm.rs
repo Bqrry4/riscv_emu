@@ -43,5 +43,6 @@ pub fn handle_op_imm(cpu: &mut CPU, instr: u32) {
 }
 
 fn instr_addi(cpu: &mut CPU, rd: &u8, rs1: &u8, imm: &i16) {
-    cpu.x_regs[*rd as usize] = cpu.x_regs[*rs1 as usize] + (*imm as u64);
+    cpu.x_regs
+        .write(*rd, cpu.x_regs.read(*rs1).wrapping_add(*imm as u64));
 }

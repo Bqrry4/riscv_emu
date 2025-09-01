@@ -1,10 +1,8 @@
 use cpu::*;
 pub mod cpu;
 
-// use instructions::*;
+mod components;
 mod instructions;
-
-use util::*;
 pub mod util;
 
 fn main() {

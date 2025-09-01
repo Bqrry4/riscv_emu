@@ -1,15 +1,8 @@
+use crate::components::registers::XRegisters;
 use crate::instructions::decode;
 
-/* u32 ->
- *
- * define Instruction AND (op: OP, f3 111, f7 0000000, exec) as a macro for inserting in the tree
- *
- */
-
-//match opcode value -> return type with function to execute
-
 pub struct CPU {
-    pub x_regs: [u64; 32],
+    pub x_regs: XRegisters,
     pub pc: u64,
     pub memory: [u32; 64],
 }
@@ -17,7 +10,7 @@ pub struct CPU {
 impl CPU {
     pub fn new() -> Self {
         let cpu = Self {
-            x_regs: [0; 32],
+            x_regs: XRegisters::new(),
             pc: 0,
             //Fill this with NOPs, which is 0x13 on riscv
             memory: [0x13; 64],

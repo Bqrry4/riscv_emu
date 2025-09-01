@@ -20,13 +20,13 @@ const FUNCT3_LOOKUP_TABLE: [Option<RTypeFn>; FUNCT3_SIZE] = {
     let mut table: [Option<RTypeFn>; FUNCT3_SIZE] = [None; FUNCT3_SIZE];
 
     table[FUNCT3::ADD_SUB as usize] = Some(handle_add_sub);
-    table[FUNCT3::SRL_SRA as usize] = None;
-    table[FUNCT3::SLL as usize] = None;
-    table[FUNCT3::SLT as usize] = None;
-    table[FUNCT3::SLTU as usize] = None;
-    table[FUNCT3::XOR as usize] = None;
-    table[FUNCT3::OR as usize] = None;
-    table[FUNCT3::AND as usize] = None;
+    table[FUNCT3::SRL_SRA as usize] = Some(handle_srl_sra);
+    table[FUNCT3::SLL as usize] = Some(instr_sll);
+    table[FUNCT3::SLT as usize] = Some(instr_slt);
+    table[FUNCT3::SLTU as usize] = Some(instr_sltu);
+    table[FUNCT3::XOR as usize] = Some(instr_xor);
+    table[FUNCT3::OR as usize] = Some(instr_or);
+    table[FUNCT3::AND as usize] = Some(instr_and);
 
     table
 };
@@ -50,9 +50,31 @@ fn handle_add_sub(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {
     }
 }
 
+fn handle_srl_sra(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {
+    match funct7 {
+        0x0 => instr_srl(cpu, rd, rs1, rs2),
+        0x20 => instr_sra(cpu, rd, rs1, rs2),
+        _ => {}
+    }
+}
+
 fn instr_add(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {
-    cpu.x_regs[*rd as usize] = cpu.x_regs[*rs1 as usize] + cpu.x_regs[*rs2 as usize];
+    cpu.x_regs.write(
+        *rd,
+        cpu.x_regs.read(*rs1).wrapping_add(cpu.x_regs.read(*rs2)),
+    );
 }
 fn instr_sub(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {
-    cpu.x_regs[*rd as usize] = cpu.x_regs[*rs1 as usize] - cpu.x_regs[*rs2 as usize];
+    cpu.x_regs.write(
+        *rd,
+        cpu.x_regs.read(*rs1).wrapping_sub(cpu.x_regs.read(*rs2)),
+    );
 }
+fn instr_srl(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {}
+fn instr_sra(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {}
+fn instr_sll(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
+fn instr_slt(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
+fn instr_sltu(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
+fn instr_xor(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
+fn instr_or(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
+fn instr_and(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}

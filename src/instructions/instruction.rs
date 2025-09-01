@@ -29,8 +29,8 @@ pub const fn i_type(instr: u32) -> (u8, u8, u8, i16) {
     let rd = ((instr >> 7) & 0x1f) as u8;
     let funct3 = ((instr >> 12) & 0x7) as u8;
     let rs1 = ((instr >> 15) & 0x1f) as u8;
-    let imm = (instr >> 20) as i16;
-    let imm = sign_extend!(imm, 11);
+    //preserve the sign
+    let imm = ((instr as i32) >> 20) as i16;
 
     (rd, funct3, rs1, imm)
 }
@@ -39,7 +39,8 @@ pub const fn s_type(instr: u32) -> (u8, u8, u8, i16) {
     let funct3 = ((instr >> 12) & 0x7) as u8;
     let rs1 = ((instr >> 15) & 0x1f) as u8;
     let rs2 = ((instr >> 20) & 0x1f) as u8;
-    let imm = (((instr >> 25) << 5) | (instr >> 7) & 0x1F) as i16;
+    //preserve the sign
+    let imm = ((instr as i32 >> 20) & 0xfe0) as i16 | ((instr >> 7) & 0x1F) as i16;
 
     (funct3, rs1, rs2, imm)
 }
@@ -56,9 +57,8 @@ pub const fn b_type(instr: u32) -> (u8, u8, u8, i16) {
         // imm[11]
         | (instr << 4 & 0x800)
         // imm[12] sign
-        | (instr >> 19 & 0x1000)
+        | (instr as i32 >> 19 & 0xf000) as u32
     ) as i16;
-    let imm = sign_extend!(imm, 12);
 
     (funct3, rs1, rs2, imm)
 }
@@ -80,11 +80,9 @@ const fn j_type(_cpu: &mut CPU, instr: u32) -> (u8, i32) {
         | (instr >> 9 & 0x800)
         // imm[19:12]
         | (instr & 0xff000)
-        // imm[12] sign
-        | (instr >> 11 & 0x100000)
+        // imm[20] sign
+        | ((instr as i32 >> 11) as u32 & 0xfff00000) as u32
     ) as i32;
-
-    let imm = sign_extend!(imm, 20);
 
     (rd, imm)
 }
@@ -153,9 +151,9 @@ pub fn decode(instr: u32) -> Option<InstructionFn> {
 /* Single class instructions */
 fn instr_lui(cpu: &mut CPU, instr: u32) {
     let (rd, imm) = u_type(instr);
-    cpu.x_regs[rd as usize] = imm as u64;
+    cpu.x_regs.write(rd, imm as u64);
 }
 fn instr_auipc(cpu: &mut CPU, instr: u32) {
     let (rd, imm) = u_type(instr);
-    cpu.x_regs[rd as usize] = cpu.pc + (imm as u64);
+    cpu.x_regs.write(rd, cpu.pc + (imm as u64));
 }
