@@ -61,21 +61,22 @@ fn handle_srl_sra(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
         _ => {}
     }
 }
-
+#[inline(always)]
 fn instr_add(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).wrapping_add(cpu.x_regs.read(rs2)));
 }
+#[inline(always)]
 fn instr_sub(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).wrapping_sub(cpu.x_regs.read(rs2)));
 }
 #[inline(always)]
-fn instr_srl(cpu: &mut CPU, rd: u8, rs1: u8, shamt: u8) {
+pub fn instr_srl(cpu: &mut CPU, rd: u8, rs1: u8, shamt: u8) {
     cpu.x_regs.write(rd, cpu.x_regs.read(rs1) >> shamt);
 }
 #[inline(always)]
-fn instr_sra(cpu: &mut CPU, rd: u8, rs1: u8, shamt: u8) {
+pub fn instr_sra(cpu: &mut CPU, rd: u8, rs1: u8, shamt: u8) {
     cpu.x_regs
         .write(rd, ((cpu.x_regs.read(rs1) as i64) >> shamt) as u64);
 }
