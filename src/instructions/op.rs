@@ -1,3 +1,5 @@
+use std::ops::{BitAnd, BitOr, BitXor};
+
 use super::instruction::*;
 use crate::cpu::CPU;
 
@@ -14,7 +16,7 @@ enum FUNCT3 {
     AND = 0x7,
 }
 
-type RTypeFn = fn(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8);
+type RTypeFn = fn(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, funct7: u8);
 
 const FUNCT3_LOOKUP_TABLE: [Option<RTypeFn>; FUNCT3_SIZE] = {
     let mut table: [Option<RTypeFn>; FUNCT3_SIZE] = [None; FUNCT3_SIZE];
@@ -39,10 +41,10 @@ pub fn handle_op(cpu: &mut CPU, instr: u32) {
         panic!("Instruction not supported");
     });
 
-    instr_fn(cpu, &rd, &rs1, &rs2, &funct7);
+    instr_fn(cpu, rd, rs1, rs2, funct7);
 }
 
-fn handle_add_sub(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {
+fn handle_add_sub(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
     match funct7 {
         0x0 => instr_add(cpu, rd, rs1, rs2),
         0x20 => instr_sub(cpu, rd, rs1, rs2),
@@ -50,31 +52,56 @@ fn handle_add_sub(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {
     }
 }
 
-fn handle_srl_sra(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {
+fn handle_srl_sra(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
+    let shamt = (cpu.x_regs.read(rs2) & 0x3f) as u8;
+
     match funct7 {
-        0x0 => instr_srl(cpu, rd, rs1, rs2),
-        0x20 => instr_sra(cpu, rd, rs1, rs2),
+        0x0 => instr_srl(cpu, rd, rs1, shamt),
+        0x20 => instr_sra(cpu, rd, rs1, shamt),
         _ => {}
     }
 }
 
-fn instr_add(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {
+fn instr_add(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8) {
+    cpu.x_regs
+        .write(rd, cpu.x_regs.read(rs1).wrapping_add(cpu.x_regs.read(rs2)));
+}
+fn instr_sub(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8) {
+    cpu.x_regs
+        .write(rd, cpu.x_regs.read(rs1).wrapping_sub(cpu.x_regs.read(rs2)));
+}
+#[inline(always)]
+fn instr_srl(cpu: &mut CPU, rd: u8, rs1: u8, shamt: u8) {
+    cpu.x_regs.write(rd, cpu.x_regs.read(rs1) >> shamt);
+}
+#[inline(always)]
+fn instr_sra(cpu: &mut CPU, rd: u8, rs1: u8, shamt: u8) {
+    cpu.x_regs
+        .write(rd, ((cpu.x_regs.read(rs1) as i64) >> shamt) as u64);
+}
+fn instr_sll(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, _: u8) {
+    let shamt = (cpu.x_regs.read(rs2) & 0x3f) as u8;
+    cpu.x_regs.write(rd, cpu.x_regs.read(rs1) << shamt);
+}
+fn instr_slt(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, _: u8) {
     cpu.x_regs.write(
-        *rd,
-        cpu.x_regs.read(*rs1).wrapping_add(cpu.x_regs.read(*rs2)),
+        rd,
+        ((cpu.x_regs.read(rs1) as i64) < (cpu.x_regs.read(rs2) as i64)) as u64,
     );
 }
-fn instr_sub(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {
-    cpu.x_regs.write(
-        *rd,
-        cpu.x_regs.read(*rs1).wrapping_sub(cpu.x_regs.read(*rs2)),
-    );
+fn instr_sltu(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, _: u8) {
+    cpu.x_regs
+        .write(rd, (cpu.x_regs.read(rs1) < cpu.x_regs.read(rs2)) as u64);
 }
-fn instr_srl(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {}
-fn instr_sra(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8) {}
-fn instr_sll(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
-fn instr_slt(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
-fn instr_sltu(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
-fn instr_xor(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
-fn instr_or(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
-fn instr_and(cpu: &mut CPU, rd: &u8, rs1: &u8, rs2: &u8, funct7: &u8) {}
+fn instr_xor(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, _: u8) {
+    cpu.x_regs
+        .write(rd, cpu.x_regs.read(rs1).bitxor(cpu.x_regs.read(rs2)));
+}
+fn instr_or(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, _: u8) {
+    cpu.x_regs
+        .write(rd, cpu.x_regs.read(rs1).bitor(cpu.x_regs.read(rs2)));
+}
+fn instr_and(cpu: &mut CPU, rd: u8, rs1: u8, rs2: u8, _: u8) {
+    cpu.x_regs
+        .write(rd, cpu.x_regs.read(rs1).bitand(cpu.x_regs.read(rs2)));
+}

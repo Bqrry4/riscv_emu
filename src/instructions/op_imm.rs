@@ -1,7 +1,7 @@
 use super::instruction::*;
 use crate::cpu::CPU;
 
-type ITypeFn = fn(cpu: &mut CPU, rd: &u8, rs1: &u8, imm: &i16);
+type ITypeFn = fn(cpu: &mut CPU, rd: u8, rs1: u8, imm: i16);
 
 #[repr(u8)]
 #[allow(non_camel_case_types)]
@@ -39,10 +39,10 @@ pub fn handle_op_imm(cpu: &mut CPU, instr: u32) {
         panic!("Instruction not supported");
     });
 
-    instr_fn(cpu, &rd, &rs1, &imm);
+    instr_fn(cpu, rd, rs1, imm);
 }
 
-fn instr_addi(cpu: &mut CPU, rd: &u8, rs1: &u8, imm: &i16) {
+fn instr_addi(cpu: &mut CPU, rd: u8, rs1: u8, imm: i16) {
     cpu.x_regs
-        .write(*rd, cpu.x_regs.read(*rs1).wrapping_add(*imm as u64));
+        .write(rd, cpu.x_regs.read(rs1).wrapping_add(imm as u64));
 }
