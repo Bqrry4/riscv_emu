@@ -1,8 +1,10 @@
+use std::usize;
+
 use super::load::handle_load;
 use super::op::handle_op;
 use super::op_imm::handle_op_imm;
-use crate::cpu::CPU;
-use crate::sign_extend;
+use crate::cpu::Cpu;
+use crate::instructions::store::handle_store;
 
 /*
  * @Note for `allow(non_camel_case_types)` on enums, those are used as grouped const values, using the CamelCase feels wrong.
@@ -12,7 +14,7 @@ use crate::sign_extend;
 pub const OPCODE_SIZE: usize = 1 << 7 >> 2;
 pub const FUNCT3_SIZE: usize = 1 << 3;
 
-pub type InstructionFn = fn(&mut CPU, instr: u32);
+pub type InstructionFn = fn(&mut Cpu, instr: u32);
 
 /* -Instruction types- */
 pub const fn r_type(instr: u32) -> (u8, u8, u8, u8, u8) {
@@ -71,7 +73,7 @@ pub const fn u_type(instr: u32) -> (u8, i32) {
     (rd, imm)
 }
 
-const fn j_type(_cpu: &mut CPU, instr: u32) -> (u8, i32) {
+const fn j_type(_cpu: &mut Cpu, instr: u32) -> (u8, i32) {
     let rd = ((instr >> 7) & 0x1f) as u8;
     let imm = (
         // imm[10:1]|0
@@ -87,18 +89,18 @@ const fn j_type(_cpu: &mut CPU, instr: u32) -> (u8, i32) {
     (rd, imm)
 }
 
-#[repr(u8)]
+#[repr(usize)]
 #[allow(non_camel_case_types)]
 enum OPCODE {
     LOAD = 0x03,
     MISC_MEM = 0x0f,
     OP_IMM = 0x13,
     AUIPC = 0x17,
-    OP_IMM_32 = 0x1b,
+    OP_IMMW = 0x1b,
     STORE = 0x23,
     AMO = 0x2f,
     OP = 0x33,
-    OP_32 = 0x3b,
+    OPW = 0x3b,
     LUI = 0x37,
     BRANCH = 0x63,
     JALR = 0x67,
@@ -125,11 +127,12 @@ const OPCODE_LOOKUP_TABLE: [Option<InstructionFn>; OPCODE_SIZE] = {
     set_entry(&mut table, OPCODE::OP, handle_op);
     set_entry(&mut table, OPCODE::OP_IMM, handle_op_imm);
 
-    // set_entry(&mut table, OPCODE::LOAD, handle_load);
-    // set_entry(&mut table, OPCODE::STORE, handle_store);
+    // set_entry(&mut table, OPCODE::OP_32, handle_op_32);
+
+    set_entry(&mut table, OPCODE::LOAD, handle_load);
+    set_entry(&mut table, OPCODE::STORE, handle_store);
     // set_entry(&mut table, OPCODE::MISC_MEM, handle_misc_mem);
     // set_entry(&mut table, OPCODE::OP_IMM_32, handle_op_imm_32);
-    // set_entry(&mut table, OPCODE::OP_32, handle_op_32);
     // set_entry(&mut table, OPCODE::AUIPC, handle_auipc);
     // set_entry(&mut table, OPCODE::AMO, handle_amo);
     // set_entry(&mut table, OPCODE::BRANCH, handle_branch);
@@ -149,11 +152,11 @@ pub fn decode(instr: u32) -> Option<InstructionFn> {
 }
 
 /* Single class instructions */
-fn instr_lui(cpu: &mut CPU, instr: u32) {
+fn instr_lui(cpu: &mut Cpu, instr: u32) {
     let (rd, imm) = u_type(instr);
     cpu.x_regs.write(rd, imm as u64);
 }
-fn instr_auipc(cpu: &mut CPU, instr: u32) {
+fn instr_auipc(cpu: &mut Cpu, instr: u32) {
     let (rd, imm) = u_type(instr);
     cpu.x_regs.write(rd, cpu.pc + (imm as u64));
 }

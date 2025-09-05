@@ -1,41 +1,34 @@
 use super::instruction::*;
-use crate::cpu::CPU;
+use crate::{components::mmu::Size, cpu::Cpu};
 
-#[repr(u8)]
-#[allow(non_camel_case_types)]
-pub enum FUNCT3 {
-    /* RV32I */
-    LB = 0x0,
-    LH = 0x1,
-    LW = 0x2,
-    LBU = 0x4,
-    LHU = 0x5,
-    /* RV64I */
-    LWU = 0x6,
-    LD = 0x3,
+pub const LB: u8 = 0x0;
+pub const LH: u8 = 0x1;
+pub const LW: u8 = 0x2;
+pub const LD: u8 = 0x3;
+//Interesting pattern of the bit[2], which tells if the sign extension is performed
+pub const LBU: u8 = 0x4;
+pub const LHU: u8 = 0x5;
+pub const LWU: u8 = 0x6;
+
+pub fn handle_load(cpu: &mut Cpu, instr: u32) {
+    let (rd, funct3, rs1, imm) = i_type(instr);
+
+    let size = 1 << (funct3 & 0x3);
+    let addr = cpu.x_regs.read(rs1).wrapping_add(imm as u64);
+    let val = cpu.mmu.load(
+        addr,
+        //(>ᴗ•)
+        Size::from_unchecked(size),
+    );
+
+    //Sign extend by cast
+    let value = match funct3 {
+        LB => val as i8 as u64,
+        LH => val as i16 as u64,
+        LW => val as i32 as u64,
+        //@Note: the 0x7 case is ignored and treated like a normal unsign value,
+        //like a potential LDU that doesn't exist..
+        _ => val,
+    };
+    cpu.x_regs.write(rd, value);
 }
-
-const FUNCT3_LOOKUP_TABLE: [Option<InstructionFn>; FUNCT3_SIZE] = {
-    let mut table: [Option<InstructionFn>; FUNCT3_SIZE] = [None; FUNCT3_SIZE];
-
-    // table[FUNCT3::LB as usize] = Some(instr_lb);
-    // table[FUNCT3::LH as usize] = Some(instr_lh);
-    // table[FUNCT3::LW as usize] = Some(instr_lw);
-    // table[FUNCT3::LBU as usize] = Some(instr_lbu);
-    // table[FUNCT3::LHU as usize] = Some(instr_lhu);
-    // table[FUNCT3::LWU as usize] = Some(instr_lwu);
-    // table[FUNCT3::LD as usize] = Some(instr_ld);
-
-    table
-};
-pub fn handle_load(cpu: &mut CPU, instr: u32) {
-    let instr_fn = FUNCT3_LOOKUP_TABLE[((instr >> 2) & 0x4f) as usize];
-}
-
-// fn instr_lb(cpu: &mut CPU) {}
-// fn instr_lh(cpu: &mut CPU) {}
-// fn instr_lw(cpu: &mut CPU) {}
-// fn instr_lbu(cpu: &mut CPU) {}
-// fn instr_lhu(cpu: &mut CPU) {}
-// fn instr_lwu(cpu: &mut CPU) {}
-// fn instr_ld(cpu: &mut CPU) {}

@@ -1,26 +1,26 @@
+use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
 use crate::instructions::decode;
 
-pub struct CPU {
+pub struct Cpu {
     pub x_regs: XRegisters,
     pub pc: u64,
-    pub memory: [u32; 64],
+    pub mmu: Mmu,
 }
 
-impl CPU {
+impl Cpu {
     pub fn new() -> Self {
         let cpu = Self {
             x_regs: XRegisters::new(),
             pc: 0,
-            //Fill this with NOPs, which is 0x13 on riscv
-            memory: [0x13; 64],
+            mmu: Mmu::new(),
         };
         cpu
     }
 
     pub fn run(&mut self) {
         loop {
-            if self.pc == self.memory.len() as u64 {
+            if self.pc == self.mmu.memory.len() as u64 {
                 println!("Reached end of code");
                 return;
             }
@@ -30,7 +30,7 @@ impl CPU {
 
     pub fn tick(&mut self) {
         // fetch
-        let enc_inst = self.memory[self.pc as usize];
+        let enc_inst = self.mmu.memory[self.pc as usize];
         // decode
         let inst_fn = decode(enc_inst).unwrap_or_else(|| {
             //should raise a cpu exception
@@ -45,6 +45,6 @@ impl CPU {
     pub fn dump_state(&self) {
         println!("Xreg: {:?}", self.x_regs);
         println!("PC: {}", self.pc);
-        println!("MEM: {:?}", self.memory);
+        println!("MEM: {:?}", self.mmu.memory);
     }
 }
