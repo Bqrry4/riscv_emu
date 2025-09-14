@@ -1,19 +1,53 @@
+use std::pin::Pin;
+
+use arbitrary_int::u2;
+use bitbybit::bitenum;
+
+use crate::components::csr::{Csr, MSTATUS, SAPT};
 use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
 use crate::instructions::decode;
+
+#[derive(PartialEq, Eq)]
+#[bitenum(u2, exhaustive = true)]
+pub enum PrivilegeMode {
+    User = 0b00,
+    Supervisor = 0b01,
+    Machine = 0b11,
+    //Ignored, only present for `from_unchecked` conversion
+    Reserved = 0b10,
+}
+
+impl PrivilegeMode {
+    #[inline(always)]
+    pub fn from_unchecked(v: u2) -> Self {
+        unsafe { core::mem::transmute::<u2, Self>(v) }
+    }
+}
 
 pub struct Cpu {
     pub x_regs: XRegisters,
     pub pc: u64,
     pub mmu: Mmu,
+    //mmu depends on those, so they live on heap
+    // TODO: check if an arena over all struct components could solve the referencing issue
+    pub p_mode: Pin<Box<PrivilegeMode>>,
+    pub csr: Pin<Box<Csr>>,
 }
 
 impl Cpu {
     pub fn new() -> Self {
+        let csr = Box::pin(Csr::new());
+        let mstatus = &csr.csrs[MSTATUS];
+        let sapt = &csr.csrs[SAPT];
+        let p_mode = Box::pin(PrivilegeMode::Machine);
+
         let cpu = Self {
             x_regs: XRegisters::new(),
             pc: 0,
-            mmu: Mmu::new(),
+            mmu: Mmu::new(mstatus, sapt, p_mode.as_ref().get_ref()),
+            csr: csr,
+            p_mode: p_mode,
         };
         cpu
     }

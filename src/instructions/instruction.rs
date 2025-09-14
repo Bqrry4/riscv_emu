@@ -5,6 +5,7 @@ use super::op::handle_op;
 use super::op_imm::handle_op_imm;
 use crate::cpu::Cpu;
 use crate::instructions::store::handle_store;
+use crate::instructions::system::handle_system;
 
 /*
  * @Note for `allow(non_camel_case_types)` on enums, those are used as grouped const values, using the CamelCase feels wrong.
@@ -138,7 +139,7 @@ const OPCODE_LOOKUP_TABLE: [Option<InstructionFn>; OPCODE_SIZE] = {
     // set_entry(&mut table, OPCODE::BRANCH, handle_branch);
     // set_entry(&mut table, OPCODE::JAL, handle_jal);
     // set_entry(&mut table, OPCODE::JALR, handle_jalr);
-    // set_entry(&mut table, OPCODE::SYSTEM, handle_system);
+    set_entry(&mut table, OPCODE::SYSTEM, handle_system);
 
     table
 };

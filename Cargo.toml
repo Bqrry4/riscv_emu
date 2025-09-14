@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bitbybit = "1.4.0"
+arbitrary-int = "2.0"
+ouroboros = "0.18.5"
+
+[profile.release]
+opt-level = 3

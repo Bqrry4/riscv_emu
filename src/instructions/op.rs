@@ -146,26 +146,62 @@ fn instr_mulhu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, _: u8) {
         ((cpu.x_regs.read(rs1) as u128).wrapping_mul(cpu.x_regs.read(rs2) as u128) >> 64) as u64,
     );
 }
-///! TODO: handle division by zero
+
+//@ Note: on M extension, the divizion by zero and overflow doesn't raise exceptions,
+// it writes default values instead.
 #[inline(always)]
 fn instr_div(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, _: u8) {
+    let divident = cpu.x_regs.read(rs1);
+    let divisor = cpu.x_regs.read(rs2);
+
     cpu.x_regs.write(
         rd,
-        (cpu.x_regs.read(rs1) as i64).wrapping_div(cpu.x_regs.read(rs2) as i64) as u64,
+        if divisor == 0 {
+            -1i8 as u64
+        } else {
+            (divident as i64).wrapping_div(divisor as i64) as u64
+        },
     );
 }
 #[inline(always)]
 fn instr_divu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, _: u8) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).wrapping_div(cpu.x_regs.read(rs2)));
+    let divident = cpu.x_regs.read(rs1);
+    let divisor = cpu.x_regs.read(rs2);
+
+    cpu.x_regs.write(
+        rd,
+        if divisor == 0 {
+            -1i8 as u64
+        } else {
+            divident.wrapping_div(divisor)
+        },
+    );
 }
 #[inline(always)]
 fn instr_rem(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, _: u8) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).wrapping_rem(cpu.x_regs.read(rs2)));
+    let divident = cpu.x_regs.read(rs1);
+    let divisor = cpu.x_regs.read(rs2);
+
+    cpu.x_regs.write(
+        rd,
+        if divisor == 0 {
+            divident
+        } else {
+            (divident as i64).wrapping_rem(divisor as i64) as u64
+        },
+    );
 }
 #[inline(always)]
 fn instr_remu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, _: u8) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).wrapping_rem(cpu.x_regs.read(rs2)));
+    let divident = cpu.x_regs.read(rs1);
+    let divisor = cpu.x_regs.read(rs2);
+
+    cpu.x_regs.write(
+        rd,
+        if divisor == 0 {
+            divident
+        } else {
+            divident.wrapping_rem(divisor)
+        },
+    );
 }
