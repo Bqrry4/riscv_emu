@@ -130,7 +130,7 @@ const OPCODE_LOOKUP_TABLE: [Option<InstructionFn>; OPCODE_SIZE] = {
 
     // set_entry(&mut table, OPCODE::OP_32, handle_op_32);
 
-    set_entry(&mut table, OPCODE::LOAD, handle_load);
+    // set_entry(&mut table, OPCODE::LOAD, handle_load);
     set_entry(&mut table, OPCODE::STORE, handle_store);
     // set_entry(&mut table, OPCODE::MISC_MEM, handle_misc_mem);
     // set_entry(&mut table, OPCODE::OP_IMM_32, handle_op_imm_32);

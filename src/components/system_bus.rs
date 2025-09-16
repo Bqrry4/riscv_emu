@@ -19,9 +19,15 @@ impl SystemBus {
     }
 
     pub fn read(&self, address: u64, size: Size) -> Result<u64, Exception> {
-        Ok(0)
+        match address {
+            DRAM_BASE..=DRAM_END => Ok(self.dram.read(address - DRAM_BASE, size)?),
+            _ => Err(Exception::LoadAccessFault),
+        }
     }
-    pub fn write(&self, address: u64, size: Size, value: u64) -> Result<(), Exception> {
-        Ok(())
+    pub fn write(&mut self, address: u64, size: Size, value: u64) -> Result<(), Exception> {
+        match address {
+            DRAM_BASE..=DRAM_END => Ok(self.dram.write(address - DRAM_BASE, size, value)?),
+            _ => Err(Exception::StoreAccessFault),
+        }
     }
 }

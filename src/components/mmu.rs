@@ -16,6 +16,7 @@ const LEVELS: u8 = 3;
 ///Page Table Entry size
 const PTESIZE: u64 = 8;
 
+#[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum Size {
     BYTE = 1,
@@ -150,7 +151,7 @@ impl Mmu {
     //TODO: caching of addresses?
     #[inline(always)]
     //12.3.2. Virtual Address Translation Process
-    pub fn translate(&self, vaddr: u64, access: MemoryAccessType) -> Result<u64, Exception> {
+    pub fn translate(&mut self, vaddr: u64, access: MemoryAccessType) -> Result<u64, Exception> {
         // 12.1.11. Supervisor Address Translation and Protection
         // The satp CSR is considered active when the effective privilege mode is S-mode or U-mode.
         // Executions of the address-translation algorithm may only begin using a given value of satp when satp is active.
@@ -304,13 +305,15 @@ impl Mmu {
         Ok(pa.raw_value)
     }
 
-    pub fn load(&self, vaddr: u64, size: Size) -> u64 {
-        let paddr = self.translate(vaddr, MemoryAccessType::Load);
-
-        0
+    pub fn load(&mut self, vaddr: u64, size: Size) -> Result<u64, Exception> {
+        let paddr = self.translate(vaddr, MemoryAccessType::Load)?;
+        let value = self.bus.read(paddr, size)?;
+        Ok(value)
     }
 
-    pub fn store(&mut self, vaddr: u64, value: u64, size: Size) {
-        let paddr = self.translate(vaddr, MemoryAccessType::Load);
+    pub fn store(&mut self, vaddr: u64, value: u64, size: Size) -> Result<(), Exception> {
+        let paddr = self.translate(vaddr, MemoryAccessType::Load)?;
+        self.bus.write(paddr, size, value)?;
+        Ok(())
     }
 }
