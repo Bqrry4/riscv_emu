@@ -1,10 +1,11 @@
-use arbitrary_int::{traits::Integer, u1, u2};
+use arbitrary_int::{u1, u2};
 
 use crate::{
     cpu::{Cpu, PrivilegeMode},
     instructions::instruction::i_type,
 };
 
+#[allow(dead_code)]
 /// Read/Write CSR
 pub const CSRRW: u8 = 0x1;
 /// Read and Set Bits in CSR
@@ -22,6 +23,7 @@ pub const MRET: u16 = 0x302;
 pub const MNRET: u16 = 0x702;
 pub const WFI: u16 = 0x105;
 
+#[inline(never)]
 //@Note: in theory those instructions should execute atomically
 pub fn handle_system(cpu: &mut Cpu, instr: u32) {
     let (rd, funct3, rsi, csr) = i_type(instr);

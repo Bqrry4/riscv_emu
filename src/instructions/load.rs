@@ -1,5 +1,8 @@
 use super::instruction::*;
-use crate::{components::{mmu::Size, trap::Exception}, cpu::Cpu};
+use crate::{
+    components::{mmu::Size, trap::Exception},
+    cpu::Cpu,
+};
 
 pub const LB: u8 = 0x0;
 pub const LH: u8 = 0x1;
@@ -10,6 +13,7 @@ pub const LBU: u8 = 0x4;
 pub const LHU: u8 = 0x5;
 pub const LWU: u8 = 0x6;
 
+#[inline(never)]
 pub fn handle_load(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let (rd, funct3, rs1, imm) = i_type(instr);
 

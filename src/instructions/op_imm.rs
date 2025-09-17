@@ -2,49 +2,35 @@ use std::ops::{BitAnd, BitOr, BitXor};
 
 use super::instruction::*;
 use crate::{
+    components::trap::Exception,
     cpu::Cpu,
     instructions::op::{instr_sra, instr_srl},
 };
 
-type ITypeFn = fn(cpu: &mut Cpu, rd: u8, rs1: u8, imm: i16);
+const ADDI: u8 = 0x0;
+const SLTI: u8 = 0x2;
+const SLTIU: u8 = 0x3;
+const XORI: u8 = 0x4;
+const ORI: u8 = 0x6;
+const ANDI: u8 = 0x7;
+const SLLI: u8 = 0x1;
+const SRLI_SRAI: u8 = 0x5;
 
-#[repr(u8)]
-#[allow(non_camel_case_types)]
-enum FUNCT3 {
-    ADDI = 0x0,
-    SLTI = 0x2,
-    SLTIU = 0x3,
-    XORI = 0x4,
-    ORI = 0x6,
-    ANDI = 0x7,
-    SLLI = 0x1,
-    SRLI_SRAI = 0x5,
-}
-
-const FUNCT3_LOOKUP_TABLE: [Option<ITypeFn>; FUNCT3_SIZE] = {
-    let mut table: [Option<ITypeFn>; FUNCT3_SIZE] = [None; FUNCT3_SIZE];
-
-    table[FUNCT3::ADDI as usize] = Some(instr_addi);
-    table[FUNCT3::SLTI as usize] = Some(instr_slti);
-    table[FUNCT3::SLTIU as usize] = Some(instr_sltiu);
-    table[FUNCT3::XORI as usize] = Some(instr_xori);
-    table[FUNCT3::ORI as usize] = Some(instr_ori);
-    table[FUNCT3::ANDI as usize] = Some(instr_andi);
-    table[FUNCT3::SLLI as usize] = Some(instr_slli);
-    table[FUNCT3::SRLI_SRAI as usize] = Some(handle_srli_srai);
-
-    table
-};
-
-pub fn handle_op_imm(cpu: &mut Cpu, instr: u32) {
+pub fn handle_op_imm(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let (rd, funct3, rs1, imm) = i_type(instr);
 
-    let instr_fn = FUNCT3_LOOKUP_TABLE[funct3 as usize].unwrap_or_else(|| {
-        //should raise a cpu exception
-        panic!("Instruction not supported");
-    });
-
-    instr_fn(cpu, rd, rs1, imm);
+    match funct3 {
+        ADDI => instr_addi(cpu, rd, rs1, imm),
+        SLTI => instr_slti(cpu, rd, rs1, imm),
+        SLTIU => instr_sltiu(cpu, rd, rs1, imm),
+        XORI => instr_xori(cpu, rd, rs1, imm),
+        ORI => instr_ori(cpu, rd, rs1, imm),
+        ANDI => instr_andi(cpu, rd, rs1, imm),
+        SLLI => instr_slli(cpu, rd, rs1, imm),
+        SRLI_SRAI => handle_srli_srai(cpu, rd, rs1, imm),
+        _ => return Err(Exception::IllegalInstruction),
+    }
+    Ok(())
 }
 
 fn handle_srli_srai(cpu: &mut Cpu, rd: u8, rs1: u8, imm: i16) {

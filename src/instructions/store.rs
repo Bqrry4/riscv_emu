@@ -1,12 +1,14 @@
 use super::instruction::*;
-use crate::{components::mmu::Size, cpu::Cpu};
+use crate::{components::{mmu::Size, trap::Exception}, cpu::Cpu};
 
 pub const SB: u8 = 0x0;
 pub const SH: u8 = 0x1;
 pub const SW: u8 = 0x2;
 pub const SD: u8 = 0x3;
 
-pub fn handle_store(cpu: &mut Cpu, instr: u32) {
+#[inline(never)]
+
+pub fn handle_store(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let (funct3, rs1, rs2, imm) = s_type(instr);
 
     // Can compute the size direcly..
@@ -19,5 +21,5 @@ pub fn handle_store(cpu: &mut Cpu, instr: u32) {
 
     let value = cpu.x_regs.read(rs2);
 
-    cpu.mmu.store(addr, value, size);
+    cpu.mmu.store(addr, value, size)
 }

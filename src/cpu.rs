@@ -6,7 +6,7 @@ use bitbybit::bitenum;
 use crate::components::csr::{Csr, MSTATUS, SAPT};
 use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
-use crate::instructions::decode;
+use crate::instructions::decode_and_execute;
 
 #[derive(PartialEq, Eq)]
 #[bitenum(u2, exhaustive = true)]
@@ -65,13 +65,8 @@ impl Cpu {
     pub fn tick(&mut self) {
         // fetch
         let enc_inst = self.mmu.memory[self.pc as usize];
-        // decode
-        let inst_fn = decode(enc_inst).unwrap_or_else(|| {
-            //should raise a cpu exception
-            panic!("Instruction not supported");
-        });
-        // execute
-        inst_fn(self, enc_inst);
+        // decode + execute
+        let _ = decode_and_execute(self, enc_inst);
         // inc pc
         self.pc = self.pc + 1;
     }

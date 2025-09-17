@@ -10,3 +10,7 @@ ouroboros = "0.18.5"
 
 [profile.release]
 opt-level = 3
+
+[profile.dev]
+opt-level = 3
+debug = true
