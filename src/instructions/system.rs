@@ -2,7 +2,7 @@ use arbitrary_int::{u1, u2};
 
 use crate::{
     cpu::{Cpu, PrivilegeMode},
-    instructions::{instruction::i_type, types::IType},
+    instructions::types::IType,
 };
 
 #[allow(dead_code)]

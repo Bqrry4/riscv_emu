@@ -5,7 +5,7 @@ use crate::components::trap::Exception;
 use crate::cpu::Cpu;
 use crate::instructions::store::handle_store;
 use crate::instructions::system::handle_system;
-use crate::instructions::types::UType;
+use crate::instructions::types::{JType, UType};
 
 //Opcodes, remove the last 2 bits for C extension
 const LOAD: u8 = 0x03 >> 2;

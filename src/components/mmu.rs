@@ -128,7 +128,7 @@ pub struct Sv39pte {
 }
 
 pub struct Mmu {
-    pub memory: [u32; 64],
+    pub memory: [u8; 256],
     pub bus: SystemBus,
     //Use raw pointers for now, as self-referencing is a pita
     mstatus: *const u64,
@@ -140,7 +140,7 @@ impl Mmu {
     pub fn new(mstatus: *const u64, sapt: *const u64, p_mode: *const PrivilegeMode) -> Self {
         Self {
             //Fill this with NOPs, which is 0x13 on riscv
-            memory: [0x13; 64],
+            memory: [0; 256],
             bus: SystemBus::new(),
             mstatus,
             sapt,
@@ -149,7 +149,6 @@ impl Mmu {
     }
 
     //TODO: caching of addresses?
-    #[inline(always)]
     //12.3.2. Virtual Address Translation Process
     pub fn translate(&mut self, vaddr: u64, access: MemoryAccessType) -> Result<u64, Exception> {
         // 12.1.11. Supervisor Address Translation and Protection
@@ -303,6 +302,12 @@ impl Mmu {
         pa.set_ppn2(u26::new(ppn[2] as u32));
 
         Ok(pa.raw_value)
+    }
+
+    pub fn fetch(&mut self, vaddr: u64) -> Result<u32, Exception> {
+        let paddr = self.translate(vaddr, MemoryAccessType::Instruction)?;
+        let value = self.bus.read(paddr, Size::WORD)?;
+        Ok(value as u32)
     }
 
     pub fn load(&mut self, vaddr: u64, size: Size) -> Result<u64, Exception> {

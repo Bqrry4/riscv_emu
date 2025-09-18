@@ -6,6 +6,8 @@ use bitbybit::bitenum;
 use crate::components::csr::{Csr, MSTATUS, SAPT};
 use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
+use crate::components::system_bus::{DRAM_BASE, DRAM_END};
+use crate::components::trap::Exception;
 use crate::instructions::decode_and_execute;
 
 #[derive(PartialEq, Eq)]
@@ -54,7 +56,8 @@ impl Cpu {
 
     pub fn run(&mut self) {
         loop {
-            if self.pc == self.mmu.memory.len() as u64 {
+            //TODO: remove hardcoded condition
+            if self.pc >= DRAM_BASE + 8 as u64 {
                 println!("Reached end of code");
                 return;
             }
@@ -62,13 +65,25 @@ impl Cpu {
         }
     }
 
+    //TODO: handle exceptions obvs
+    fn handle_exception(&self, e: Exception) {
+        println!("Exception {:?}", e as u8);
+        panic!()
+    }
+
+    #[inline(never)]
     pub fn tick(&mut self) {
-        // fetch
-        let enc_inst = self.mmu.memory[self.pc as usize];
-        // decode + execute
-        let _ = decode_and_execute(self, enc_inst);
-        // inc pc
-        self.pc = self.pc + 1;
+        //exception block
+        let _ = (|| -> Result<(), Exception> {
+            // fetch
+            let enc_inst = self.mmu.fetch(self.pc)?;
+            // decode + execute
+            decode_and_execute(self, enc_inst)?;
+            // inc pc
+            self.pc += 4;
+            Ok(())
+        })()
+        .map_err(|e| self.handle_exception(e));
     }
 
     pub fn dump_state(&self) {
