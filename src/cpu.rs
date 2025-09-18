@@ -75,12 +75,13 @@ impl Cpu {
     pub fn tick(&mut self) {
         //exception block
         let _ = (|| -> Result<(), Exception> {
+            // IF - instruction fetch stage
             // fetch
             let enc_inst = self.mmu.fetch(self.pc)?;
+            // and inc pc
+            self.pc += 4;
             // decode + execute
             decode_and_execute(self, enc_inst)?;
-            // inc pc
-            self.pc += 4;
             Ok(())
         })()
         .map_err(|e| self.handle_exception(e));

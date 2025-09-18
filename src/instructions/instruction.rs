@@ -1,3 +1,5 @@
+use std::ops::{Add, BitAnd};
+
 use super::load::handle_load;
 use super::op::handle_op;
 use super::op_imm::handle_op_imm;
@@ -5,7 +7,7 @@ use crate::components::trap::Exception;
 use crate::cpu::Cpu;
 use crate::instructions::store::handle_store;
 use crate::instructions::system::handle_system;
-use crate::instructions::types::{JType, UType};
+use crate::instructions::types::{IType, JType, UType};
 
 //Opcodes, remove the last 2 bits for C extension
 const LOAD: u8 = 0x03 >> 2;
@@ -37,8 +39,8 @@ pub fn decode_and_execute(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
         LUI => instr_lui(cpu, instr),
         AUIPC => instr_auipc(cpu, instr),
         BRANCH => {}
-        JALR => {}
-        JAL => {}
+        JALR => instr_jalr(cpu, instr),
+        JAL => instr_jal(cpu, instr),
         SYSTEM => handle_system(cpu, instr),
         _ => return Err(Exception::IllegalInstruction),
     }
@@ -58,4 +60,32 @@ fn instr_auipc(cpu: &mut Cpu, instr: u32) {
     let (rd, imm) = (utype.rd(), utype.imm());
 
     cpu.x_regs.write(rd, cpu.pc + (imm as u64));
+}
+
+//2.5.1. Unconditional Jumps
+fn instr_jal(cpu: &mut Cpu, instr: u32) {
+    let jtype = JType::new_with_raw_value(instr);
+    let (rd, imm) = (jtype.rd(), jtype.imm());
+    //the current pc is supposed to be of the next instruction
+    cpu.x_regs.write(rd, cpu.pc);
+
+    cpu.pc = cpu
+        .pc
+        //the address of the jump is 4 bytes behind
+        .wrapping_sub(4)
+        .wrapping_add(imm.value() as u64);
+}
+fn instr_jalr(cpu: &mut Cpu, instr: u32) {
+    let itype = IType::new_with_raw_value(instr);
+    let (rd, rs1, imm) = (itype.rd(), itype.rs1(), itype.imm());
+
+    cpu.x_regs.write(rd, cpu.pc);
+    cpu.pc = cpu
+        .x_regs
+        .read(rs1)
+        //the address of the jump is 4 bytes behind
+        .wrapping_sub(4)
+        .wrapping_add(imm.value() as u64)
+        //clear the lsb
+        .bitand(!1);
 }
