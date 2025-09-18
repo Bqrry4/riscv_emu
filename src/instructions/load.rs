@@ -2,6 +2,7 @@ use super::instruction::*;
 use crate::{
     components::{mmu::Size, trap::Exception},
     cpu::Cpu,
+    instructions::types::IType,
 };
 
 pub const LB: u8 = 0x0;
@@ -13,12 +14,12 @@ pub const LBU: u8 = 0x4;
 pub const LHU: u8 = 0x5;
 pub const LWU: u8 = 0x6;
 
-#[inline(never)]
 pub fn handle_load(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
-    let (rd, funct3, rs1, imm) = i_type(instr);
+    let itype = IType::new_with_raw_value(instr);
+    let (rd, funct3, rs1, imm) = (itype.rd(), itype.funct3(), itype.rs1(), itype.imm());
 
-    let size = 1 << (funct3 & 0x3);
-    let addr = cpu.x_regs.read(rs1).wrapping_add(imm as u64);
+    let size = 1 << (funct3.value() & 0x3);
+    let addr = cpu.x_regs.read(rs1).wrapping_add(imm.value() as u64);
     let val = cpu.mmu.load(
         addr,
         //(>ᴗ•)
@@ -26,7 +27,7 @@ pub fn handle_load(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     )?;
 
     //Sign extend by cast
-    let value = match funct3 {
+    let value = match funct3.value() {
         LB => val as i8 as u64,
         LH => val as i16 as u64,
         LW => val as i32 as u64,

@@ -2,7 +2,7 @@ use arbitrary_int::{u1, u2};
 
 use crate::{
     cpu::{Cpu, PrivilegeMode},
-    instructions::instruction::i_type,
+    instructions::{instruction::i_type, types::IType},
 };
 
 #[allow(dead_code)]
@@ -26,13 +26,14 @@ pub const WFI: u16 = 0x105;
 #[inline(never)]
 //@Note: in theory those instructions should execute atomically
 pub fn handle_system(cpu: &mut Cpu, instr: u32) {
-    let (rd, funct3, rsi, csr) = i_type(instr);
+    let itype = IType::new_with_raw_value(instr);
+    let (rd, funct3, rsi, csr) = (itype.rd(), itype.funct3(), itype.rs1(), itype.imm());
 
     //get rid of the sign extended bytes
-    let csr_addr = (csr as u16) & 0xfff;
+    let csr_addr = (csr.value() as u16) & 0xfff;
 
     //handle the funct3=0 subclass
-    if funct3 == 0 {
+    if funct3.value() == 0 {
         match csr_addr {
             //3.3.2. Trap-Return Instructions
             SRET => {
@@ -83,9 +84,9 @@ pub fn handle_system(cpu: &mut Cpu, instr: u32) {
     }
 
     // check for bit[2]
-    let rs_val = if (funct3 >> 2) != 0 {
+    let rs_val = if (funct3.value() >> 2) != 0 {
         //rsi is an imm
-        rsi as u64
+        rsi.value() as u64
     } else {
         //rsi is a reg
         cpu.x_regs.read(rsi)
@@ -94,7 +95,7 @@ pub fn handle_system(cpu: &mut Cpu, instr: u32) {
 
     // TODO: check for rsi==x0
     //handle Zicsr extension
-    match funct3 & 0x3 {
+    match funct3.value() & 0x3 {
         CSRRW => {
             //swap the values
             cpu.csr.write(csr_addr, rs_val);

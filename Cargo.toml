@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bitbybit = "1.4.0"
+bitbybit = { git = "https://github.com/danlehmann/bitfield", rev = "b9d608c" }
+# bitbybit = "1.4.0"
 arbitrary-int = "2.0"
 ouroboros = "0.18.5"
 

@@ -1,7 +1,9 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
+use arbitrary_int::{u5, u6, u7};
+
 use super::instruction::*;
-use crate::{components::trap::Exception, cpu::Cpu};
+use crate::{components::trap::Exception, cpu::Cpu, instructions::types::RType};
 
 //I+M extenions
 const ADD_SUB_MUL: u8 = 0x0;
@@ -14,9 +16,16 @@ const OR_REM: u8 = 0x6;
 const AND_REMU: u8 = 0x7;
 
 pub fn handle_op(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
-    let (rd, funct3, rs1, rs2, funct7) = r_type(instr);
+    let rtype = RType::new_with_raw_value(instr);
+    let (rd, funct3, rs1, rs2, funct7) = (
+        rtype.rd(),
+        rtype.funct3(),
+        rtype.rs1(),
+        rtype.rs2(),
+        rtype.funct7(),
+    );
 
-    match funct3 {
+    match funct3.value() {
         ADD_SUB_MUL => handle_add_sub_mul(cpu, rd, rs1, rs2, funct7),
         SLL_MULH => handle_sll_mulh(cpu, rd, rs1, rs2, funct7),
         SLT_MULHSU => handle_slt_mulhsu(cpu, rd, rs1, rs2, funct7),
@@ -30,61 +39,61 @@ pub fn handle_op(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     Ok(())
 }
 
-fn handle_add_sub_mul(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_add_sub_mul(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_add(cpu, rd, rs1, rs2),
         0x20 => instr_sub(cpu, rd, rs1, rs2),
         0x01 => instr_mul(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_srl_sra_divu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    let shamt = (cpu.x_regs.read(rs2) & 0x3f) as u8;
+fn handle_srl_sra_divu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    let shamt = unsafe { u6::new_unchecked((cpu.x_regs.read(rs2) & 0x3f) as u8) };
 
-    match funct7 {
+    match funct7.value() {
         0x0 => instr_srl(cpu, rd, rs1, shamt),
         0x20 => instr_sra(cpu, rd, rs1, shamt),
         0x1 => instr_divu(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_sll_mulh(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_sll_mulh(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_sll(cpu, rd, rs1, rs2),
         0x1 => instr_mulh(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_slt_mulhsu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_slt_mulhsu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_slt(cpu, rd, rs1, rs2),
         0x1 => instr_mulhsu(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_sltu_mulhu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_sltu_mulhu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_sltu(cpu, rd, rs1, rs2),
         0x1 => instr_mulhu(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_xor_div(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_xor_div(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_xor(cpu, rd, rs1, rs2),
         0x1 => instr_div(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_or_rem(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_or_rem(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_or(cpu, rd, rs1, rs2),
         0x1 => instr_rem(cpu, rd, rs1, rs2),
         _ => {}
     }
 }
-fn handle_and_remu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
-    match funct7 {
+fn handle_and_remu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
+    match funct7.value() {
         0x0 => instr_and(cpu, rd, rs1, rs2),
         0x1 => instr_remu(cpu, rd, rs1, rs2),
         _ => {}
@@ -93,66 +102,66 @@ fn handle_and_remu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8, funct7: u8) {
 
 //-RV32I-
 #[inline(always)]
-fn instr_add(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_add(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).wrapping_add(cpu.x_regs.read(rs2)));
 }
 #[inline(always)]
-fn instr_sub(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_sub(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).wrapping_sub(cpu.x_regs.read(rs2)));
 }
 #[inline(always)]
-pub fn instr_srl(cpu: &mut Cpu, rd: u8, rs1: u8, shamt: u8) {
-    cpu.x_regs.write(rd, cpu.x_regs.read(rs1) >> shamt);
+pub fn instr_srl(cpu: &mut Cpu, rd: u5, rs1: u5, shamt: u6) {
+    cpu.x_regs.write(rd, cpu.x_regs.read(rs1) >> shamt.value());
 }
 #[inline(always)]
-pub fn instr_sra(cpu: &mut Cpu, rd: u8, rs1: u8, shamt: u8) {
+pub fn instr_sra(cpu: &mut Cpu, rd: u5, rs1: u5, shamt: u6) {
     cpu.x_regs
-        .write(rd, ((cpu.x_regs.read(rs1) as i64) >> shamt) as u64);
+        .write(rd, ((cpu.x_regs.read(rs1) as i64) >> shamt.value()) as u64);
 }
 #[inline(always)]
-fn instr_sll(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_sll(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     let shamt = (cpu.x_regs.read(rs2) & 0x3f) as u8;
     cpu.x_regs.write(rd, cpu.x_regs.read(rs1) << shamt);
 }
 #[inline(always)]
-fn instr_slt(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_slt(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs.write(
         rd,
         ((cpu.x_regs.read(rs1) as i64) < (cpu.x_regs.read(rs2) as i64)) as u64,
     );
 }
 #[inline(always)]
-fn instr_sltu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_sltu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs
         .write(rd, (cpu.x_regs.read(rs1) < cpu.x_regs.read(rs2)) as u64);
 }
 #[inline(always)]
-fn instr_xor(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_xor(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).bitxor(cpu.x_regs.read(rs2)));
 }
 #[inline(always)]
-fn instr_or(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_or(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).bitor(cpu.x_regs.read(rs2)));
 }
 #[inline(always)]
-fn instr_and(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_and(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs
         .write(rd, cpu.x_regs.read(rs1).bitand(cpu.x_regs.read(rs2)));
 }
 //-RV32M-
 #[inline(always)]
-fn instr_mul(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_mul(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     cpu.x_regs.write(
         rd,
         (cpu.x_regs.read(rs1) as i64).wrapping_mul(cpu.x_regs.read(rs2) as i64) as u64,
     );
 }
 #[inline(always)]
-fn instr_mulh(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_mulh(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     //signed×signed
     cpu.x_regs.write(
         rd,
@@ -160,7 +169,7 @@ fn instr_mulh(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
     );
 }
 #[inline(always)]
-fn instr_mulhsu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_mulhsu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     //signed×unsigned
     cpu.x_regs.write(
         rd,
@@ -169,7 +178,7 @@ fn instr_mulhsu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
     );
 }
 #[inline(always)]
-fn instr_mulhu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_mulhu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     //unsigned×unsigned
     cpu.x_regs.write(
         rd,
@@ -180,7 +189,7 @@ fn instr_mulhu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
 //@ Note: on M extension, the divizion by zero and overflow doesn't raise exceptions,
 // it writes default values instead.
 #[inline(always)]
-fn instr_div(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_div(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     let divident = cpu.x_regs.read(rs1);
     let divisor = cpu.x_regs.read(rs2);
 
@@ -194,7 +203,7 @@ fn instr_div(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
     );
 }
 #[inline(always)]
-fn instr_divu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_divu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     let divident = cpu.x_regs.read(rs1);
     let divisor = cpu.x_regs.read(rs2);
 
@@ -208,7 +217,7 @@ fn instr_divu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
     );
 }
 #[inline(always)]
-fn instr_rem(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_rem(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     let divident = cpu.x_regs.read(rs1);
     let divisor = cpu.x_regs.read(rs2);
 
@@ -222,7 +231,7 @@ fn instr_rem(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
     );
 }
 #[inline(always)]
-fn instr_remu(cpu: &mut Cpu, rd: u8, rs1: u8, rs2: u8) {
+fn instr_remu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
     let divident = cpu.x_regs.read(rs1);
     let divisor = cpu.x_regs.read(rs2);
 

@@ -4,5 +4,6 @@ mod op;
 mod op_imm;
 mod store;
 mod system;
+mod types;
 
 pub use self::instruction::decode_and_execute;
