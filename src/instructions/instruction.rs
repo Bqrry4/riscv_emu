@@ -1,10 +1,11 @@
-use std::ops::{Add, BitAnd};
+use std::ops::BitAnd;
 
 use super::load::handle_load;
 use super::op::handle_op;
 use super::op_imm::handle_op_imm;
 use crate::components::trap::Exception;
 use crate::cpu::Cpu;
+use crate::instructions::branch::handle_branch;
 use crate::instructions::store::handle_store;
 use crate::instructions::system::handle_system;
 use crate::instructions::types::{IType, JType, UType};
@@ -38,7 +39,7 @@ pub fn decode_and_execute(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
         OPW => {}
         LUI => instr_lui(cpu, instr),
         AUIPC => instr_auipc(cpu, instr),
-        BRANCH => {}
+        BRANCH => handle_branch(cpu, instr),
         JALR => instr_jalr(cpu, instr),
         JAL => instr_jal(cpu, instr),
         SYSTEM => handle_system(cpu, instr),
@@ -62,7 +63,7 @@ fn instr_auipc(cpu: &mut Cpu, instr: u32) {
     cpu.x_regs.write(rd, cpu.pc + (imm as u64));
 }
 
-//2.5.1. Unconditional Jumps
+/* 2.5.1. Unconditional Jumps */
 fn instr_jal(cpu: &mut Cpu, instr: u32) {
     let jtype = JType::new_with_raw_value(instr);
     let (rd, imm) = (jtype.rd(), jtype.imm());

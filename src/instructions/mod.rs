@@ -1,3 +1,4 @@
+mod branch;
 mod instruction;
 mod load;
 mod op;

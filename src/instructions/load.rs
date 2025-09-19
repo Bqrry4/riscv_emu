@@ -1,4 +1,3 @@
-use super::instruction::*;
 use crate::{
     components::{mmu::Size, trap::Exception},
     cpu::Cpu,

@@ -2,7 +2,6 @@ use std::ops::{BitAnd, BitOr, BitXor};
 
 use arbitrary_int::{u5, u6, u7};
 
-use super::instruction::*;
 use crate::{components::trap::Exception, cpu::Cpu, instructions::types::RType};
 
 //I+M extenions
