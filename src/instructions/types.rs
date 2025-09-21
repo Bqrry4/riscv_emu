@@ -1,4 +1,4 @@
-use arbitrary_int::{i12, i13, i21, u3, u5, u7};
+use arbitrary_int::{i12, i13, i21, u1, u3, u5, u7};
 use bitbybit::bitfield;
 
 /* -Instruction types- */
@@ -99,4 +99,23 @@ impl JType {
         //manually constructed
         unsafe { i21::new_unchecked(imm) }
     }
+}
+
+///The RType instruction specialized for A extension
+#[bitfield(u32)]
+pub struct ARType {
+    #[bits(27..=31, r)]
+    funct5: u5,
+    #[bit(26, r)]
+    aq: u1,
+    #[bit(25, r)]
+    rl: u1,
+    #[bits(20..=24, r)]
+    rs2: u5,
+    #[bits(15..=19, r)]
+    rs1: u5,
+    #[bits(12..=14, r)]
+    funct3: u3,
+    #[bits(7..=11, r)]
+    rd: u5,
 }

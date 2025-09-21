@@ -5,6 +5,7 @@ use super::op::handle_op;
 use super::op_imm::handle_op_imm;
 use crate::components::trap::Exception;
 use crate::cpu::Cpu;
+use crate::instructions::amo::handle_amo;
 use crate::instructions::branch::handle_branch;
 use crate::instructions::store::handle_store;
 use crate::instructions::system::handle_system;
@@ -12,7 +13,6 @@ use crate::instructions::types::{IType, JType, UType};
 
 //Opcodes, remove the last 2 bits for C extension
 const LOAD: u8 = 0x03 >> 2;
-//Zifencei not supported
 const MISC_MEM: u8 = 0x0f >> 2;
 const OP_IMM: u8 = 0x13 >> 2;
 const AUIPC: u8 = 0x17 >> 2;
@@ -31,10 +31,14 @@ pub fn decode_and_execute(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let opcode = ((instr >> 2) & 0x1f) as u8;
     match opcode {
         LOAD => handle_load(cpu, instr)?,
+        MISC_MEM => {
+            // Zifencei not supported,
+            // treated as a NO-OP as this implementation is cache-less
+        }
         OP_IMM => handle_op_imm(cpu, instr)?,
         OP_IMMW => {}
         STORE => handle_store(cpu, instr)?,
-        AMO => {}
+        AMO => handle_amo(cpu, instr)?,
         OP => handle_op(cpu, instr)?,
         OPW => {}
         LUI => instr_lui(cpu, instr),

@@ -35,6 +35,9 @@ pub struct Cpu {
     // TODO: check if an arena over all struct components could solve the referencing issue
     pub p_mode: Pin<Box<PrivilegeMode>>,
     pub csr: Pin<Box<Csr>>,
+
+    //& The invalidation of a hart’s reservation when it executes an LR or SC imply that a hart can only hold one reservation at a time
+    pub reservation: Option<u64>,
 }
 
 impl Cpu {
@@ -50,6 +53,7 @@ impl Cpu {
             mmu: Mmu::new(mstatus, sapt, p_mode.as_ref().get_ref()),
             csr: csr,
             p_mode: p_mode,
+            reservation: None,
         };
         cpu
     }

@@ -1,3 +1,4 @@
+mod amo;
 mod branch;
 mod instruction;
 mod load;
