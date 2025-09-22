@@ -35,9 +35,9 @@ pub struct Cpu {
     // TODO: check if an arena over all struct components could solve the referencing issue
     pub p_mode: Pin<Box<PrivilegeMode>>,
     pub csr: Pin<Box<Csr>>,
-
     //& The invalidation of a hart’s reservation when it executes an LR or SC imply that a hart can only hold one reservation at a time
     pub reservation: Option<u64>,
+    pub is_idle: bool,
 }
 
 impl Cpu {
@@ -54,6 +54,7 @@ impl Cpu {
             csr: csr,
             p_mode: p_mode,
             reservation: None,
+            is_idle: false,
         };
         cpu
     }
@@ -75,7 +76,6 @@ impl Cpu {
         panic!()
     }
 
-    #[inline(never)]
     pub fn tick(&mut self) {
         //exception block
         let _ = (|| -> Result<(), Exception> {

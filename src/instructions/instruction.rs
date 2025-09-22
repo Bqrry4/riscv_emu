@@ -46,7 +46,7 @@ pub fn decode_and_execute(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
         BRANCH => handle_branch(cpu, instr),
         JALR => instr_jalr(cpu, instr),
         JAL => instr_jal(cpu, instr),
-        SYSTEM => handle_system(cpu, instr),
+        SYSTEM => handle_system(cpu, instr)?,
         _ => return Err(Exception::IllegalInstruction),
     }
     Ok(())

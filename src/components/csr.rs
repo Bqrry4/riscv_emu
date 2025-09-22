@@ -23,9 +23,14 @@ const MIMPID: usize = 0xf13;
 const MHARTID: usize = 0xf14;
 /// Pointer to configuration data structure.
 const MCONFIGPTR: usize = 0xf15;
+/// Machine exception program counter.
+pub const MEPC: usize = 0x341;
 
+/* --Supervisor-level CSR-- */
 /// Supervisor address translation and protection.
 pub const SAPT: usize = 0x180;
+/// Supervisor exception program counter.
+pub const SEPC: usize = 0x141;
 
 #[bitfield(u64)]
 pub struct MStatus {
@@ -170,11 +175,11 @@ impl Csr {
         Self { csrs }
     }
 
-    pub fn read(&self, addr: u16) -> u64 {
-        self.csrs[addr as usize]
+    pub fn read(&self, addr: usize) -> u64 {
+        self.csrs[addr]
     }
-    pub fn write(&mut self, addr: u16, val: u64) {
-        self.csrs[addr as usize] = val;
+    pub fn write(&mut self, addr: usize, val: u64) {
+        self.csrs[addr] = val;
     }
 
     pub fn read_mstatus(&self) -> MStatus {

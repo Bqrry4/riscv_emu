@@ -22,7 +22,6 @@ pub fn handle_store(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let size = Size::from_unchecked(size);
 
     let addr = cpu.x_regs.read(rs1).wrapping_add(imm.value() as u64);
-
     let value = cpu.x_regs.read(rs2);
 
     cpu.mmu.store(addr, value, size)
