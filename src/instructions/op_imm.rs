@@ -2,7 +2,6 @@ use std::ops::{BitAnd, BitOr, BitXor};
 
 use arbitrary_int::{i12, u5, u6};
 
-use super::instruction::*;
 use crate::{
     components::trap::Exception,
     cpu::Cpu,

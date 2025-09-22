@@ -23,7 +23,6 @@ pub const MRET: u16 = 0x302;
 pub const MNRET: u16 = 0x702;
 pub const WFI: u16 = 0x105;
 
-#[inline(never)]
 //@Note: in theory those instructions should execute atomically
 pub fn handle_system(cpu: &mut Cpu, instr: u32) {
     let itype = IType::new_with_raw_value(instr);

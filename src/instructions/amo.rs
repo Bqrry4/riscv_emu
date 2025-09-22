@@ -1,3 +1,5 @@
+use std::ops::{BitAnd, BitOr, BitXor};
+
 use arbitrary_int::{u3, u5};
 
 use crate::{
@@ -30,23 +32,22 @@ fn check_alignment(address: u64, size: Size) -> Result<(), Exception> {
     Ok(())
 }
 
-fn amo_load_value(cpu: &mut Cpu, funct3: u3, address: u64) -> Result<u64, Exception> {
+fn amo_load_value(cpu: &mut Cpu, funct3: u3, address: u64) -> Result<(u64, Size), Exception> {
     match funct3.value() {
         AMMO_W => {
             const SIZE: Size = Size::WORD;
             check_alignment(address, SIZE)?;
             //sign extend
-            Ok(cpu.mmu.load(address, SIZE)? as i32 as u64)
+            Ok((cpu.mmu.load(address, SIZE)? as i32 as u64, SIZE))
         }
         AMMO_D => {
             const SIZE: Size = Size::DWORD;
             check_alignment(address, SIZE)?;
-            Ok(cpu.mmu.load(address, SIZE)?)
+            Ok((cpu.mmu.load(address, SIZE)?, SIZE))
         }
         _ => return Err(Exception::IllegalInstruction),
     }
 }
-
 pub fn handle_amo(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let rtype = ARType::new_with_raw_value(instr);
     //aq/rl ignored as this implementation executes sequentionally
@@ -61,15 +62,19 @@ pub fn handle_amo(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     match funct5.value() {
         LR => instr_lr(cpu, rd, rs1, funct3)?,
         SC => instr_sc(cpu, rd, rs1, rs2, funct3)?,
-        AMOSWAP => {}
-        AMOADD => {}
-        AMOXOR => {}
-        AMOAND => {}
-        AMOOR => {}
-        AMOMIN => {}
-        AMOMAX => {}
-        AMOMINU => {}
-        AMOMAXU => {}
+        AMOSWAP => amo_op(cpu, rd, rs1, rs2, funct3, |_, rhs| rhs)?,
+        AMOADD => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| lhs.wrapping_add(rhs))?,
+        AMOXOR => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| lhs.bitxor(rhs))?,
+        AMOAND => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| lhs.bitand(rhs))?,
+        AMOOR => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| lhs.bitor(rhs))?,
+        AMOMIN => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| {
+            (lhs as i64).min(rhs as i64) as u64
+        })?,
+        AMOMAX => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| {
+            (lhs as i64).max(rhs as i64) as u64
+        })?,
+        AMOMINU => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| lhs.min(rhs))?,
+        AMOMAXU => amo_op(cpu, rd, rs1, rs2, funct3, |lhs, rhs| lhs.max(rhs))?,
         _ => return Err(Exception::IllegalInstruction),
     }
 
@@ -79,7 +84,7 @@ pub fn handle_amo(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
 fn instr_lr(cpu: &mut Cpu, rd: u5, rs1: u5, funct3: u3) -> Result<(), Exception> {
     //Load the data value from the address in rs1
     let address = cpu.x_regs.read(rs1);
-    let value = amo_load_value(cpu, funct3, address)?;
+    let (value, _) = amo_load_value(cpu, funct3, address)?;
 
     cpu.reservation = Some(address);
     cpu.x_regs.write(rd, value);
@@ -91,18 +96,11 @@ fn instr_sc(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct3: u3) -> Result<(), E
     let address = cpu.x_regs.read(rs1);
 
     let size = match funct3.value() {
-        AMMO_W => {
-            const SIZE: Size = Size::WORD;
-            check_alignment(address, SIZE)?;
-            SIZE
-        }
-        AMMO_D => {
-            const SIZE: Size = Size::DWORD;
-            check_alignment(address, SIZE)?;
-            SIZE
-        }
+        AMMO_W => Size::WORD,
+        AMMO_D => Size::DWORD,
         _ => return Err(Exception::IllegalInstruction),
     };
+    check_alignment(address, size)?;
 
     let success = match cpu.reservation.is_some_and(|raddr| raddr == address) {
         true => {
@@ -115,5 +113,19 @@ fn instr_sc(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct3: u3) -> Result<(), E
     cpu.x_regs.write(rd, success);
     //& Regardless of success or failure, executing an SC.W instruction invalidates any reservation held by this hart.
     cpu.reservation = None;
+    Ok(())
+}
+
+fn amo_op<F>(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct3: u3, op: F) -> Result<(), Exception>
+where
+    F: Fn(u64, u64) -> u64,
+{
+    let address = cpu.x_regs.read(rs1);
+    let (value, size) = amo_load_value(cpu, funct3, address)?;
+
+    let new_val = op(value, cpu.x_regs.read(rs2));
+    cpu.mmu.store(address, new_val, size)?;
+    cpu.x_regs.write(rd, value);
+
     Ok(())
 }
