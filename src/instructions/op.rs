@@ -1,19 +1,28 @@
-use std::ops::{BitAnd, BitOr, BitXor};
-
-use arbitrary_int::{u5, u6, u7};
-
 use crate::{components::trap::Exception, cpu::Cpu, instructions::types::RType};
+use std::ops::{BitAnd, BitOr, BitXor, Shl, Shr};
 
-//I+M extenions
-const ADD_SUB_MUL: u8 = 0x0;
-const SLL_MULH: u8 = 0x1;
-const SLT_MULHSU: u8 = 0x2;
-const SLTU_MULHU: u8 = 0x3;
-const XOR_DIV: u8 = 0x4;
-const SRL_SRA_DIVU: u8 = 0x5;
-const OR_REM: u8 = 0x6;
-const AND_REMU: u8 = 0x7;
+//I extenion
+const ADD: (u8, u8) = (0x0, 0x0);
+const SUB: (u8, u8) = (0x0, 0x20);
+const SLL: (u8, u8) = (0x1, 0x0);
+const SLT: (u8, u8) = (0x2, 0x0);
+const SLTU: (u8, u8) = (0x3, 0x0);
+const XOR: (u8, u8) = (0x4, 0x0);
+const SRL: (u8, u8) = (0x5, 0x0);
+const SRA: (u8, u8) = (0x5, 0x20);
+const OR: (u8, u8) = (0x6, 0x0);
+const AND: (u8, u8) = (0x7, 0x0);
+//M extenion
+const MUL: (u8, u8) = (0x0, 0x1);
+const MULH: (u8, u8) = (0x1, 0x1);
+const MULHSU: (u8, u8) = (0x2, 0x1);
+const MULHU: (u8, u8) = (0x3, 0x1);
+const DIV: (u8, u8) = (0x4, 0x1);
+const DIVU: (u8, u8) = (0x5, 0x1);
+const REM: (u8, u8) = (0x6, 0x1);
+const REMU: (u8, u8) = (0x7, 0x1);
 
+#[inline(never)]
 pub fn handle_op(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let rtype = RType::new_with_raw_value(instr);
     let (rd, funct3, rs1, rs2, funct7) = (
@@ -24,222 +33,69 @@ pub fn handle_op(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
         rtype.funct7(),
     );
 
-    match funct3.value() {
-        ADD_SUB_MUL => handle_add_sub_mul(cpu, rd, rs1, rs2, funct7),
-        SLL_MULH => handle_sll_mulh(cpu, rd, rs1, rs2, funct7),
-        SLT_MULHSU => handle_slt_mulhsu(cpu, rd, rs1, rs2, funct7),
-        SLTU_MULHU => handle_sltu_mulhu(cpu, rd, rs1, rs2, funct7),
-        XOR_DIV => handle_xor_div(cpu, rd, rs1, rs2, funct7),
-        SRL_SRA_DIVU => handle_srl_sra_divu(cpu, rd, rs1, rs2, funct7),
-        OR_REM => handle_or_rem(cpu, rd, rs1, rs2, funct7),
-        AND_REMU => handle_and_remu(cpu, rd, rs1, rs2, funct7),
+    let lhs = cpu.x_regs.read(rs1);
+    let rhs = cpu.x_regs.read(rs2);
+
+    let shamt = (rhs & 0x3f) as u8;
+    let value = match (funct3.value(), funct7.value()) {
+        //-RV32I-
+        ADD => lhs.wrapping_add(rhs),
+        SUB => lhs.wrapping_sub(rhs),
+        SLL => lhs.shl(shamt),
+        SLT => (lhs as i64).lt(&(rhs as i64)) as u64,
+        SLTU => lhs.lt(&rhs) as u64,
+        XOR => lhs.bitxor(rhs),
+        SRL => lhs.shr(shamt),
+        SRA => (lhs as i64).shr(shamt) as u64,
+        OR => lhs.bitor(rhs),
+        AND => lhs.bitand(rhs),
+        //-RV32M-
+        MUL => (lhs as i64).wrapping_mul(rhs as i64) as u64,
+        MULH => {
+            //signed×signed
+            ((lhs as i128).wrapping_mul(rhs as i128) >> 64) as u64
+        }
+        MULHSU => {
+            //signed×unsigned
+            ((lhs as i128 as u128).wrapping_mul(rhs as u128) >> 64) as u64
+        }
+        MULHU => {
+            //unsigned×unsigned
+            ((lhs as u128).wrapping_mul(rhs as u128) >> 64) as u64
+        }
+        //@ Note: on M extension, the divizion by zero and overflow doesn't raise exceptions,
+        // it writes default values instead.
+        DIV => {
+            if rhs == 0 {
+                -1i8 as u64
+            } else {
+                (lhs as i64).wrapping_div(rhs as i64) as u64
+            }
+        }
+        DIVU => {
+            if rhs == 0 {
+                -1i8 as u64
+            } else {
+                lhs.wrapping_div(rhs)
+            }
+        }
+        REM => {
+            if rhs == 0 {
+                lhs
+            } else {
+                (lhs as i64).wrapping_rem(rhs as i64) as u64
+            }
+        }
+        REMU => {
+            if rhs == 0 {
+                lhs
+            } else {
+                lhs.wrapping_rem(rhs)
+            }
+        }
         _ => return Err(Exception::IllegalInstruction),
-    }
+    };
+
+    cpu.x_regs.write(rd, value);
     Ok(())
-}
-
-fn handle_add_sub_mul(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_add(cpu, rd, rs1, rs2),
-        0x20 => instr_sub(cpu, rd, rs1, rs2),
-        0x01 => instr_mul(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_srl_sra_divu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    let shamt = unsafe { u6::new_unchecked((cpu.x_regs.read(rs2) & 0x3f) as u8) };
-
-    match funct7.value() {
-        0x0 => instr_srl(cpu, rd, rs1, shamt),
-        0x20 => instr_sra(cpu, rd, rs1, shamt),
-        0x1 => instr_divu(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_sll_mulh(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_sll(cpu, rd, rs1, rs2),
-        0x1 => instr_mulh(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_slt_mulhsu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_slt(cpu, rd, rs1, rs2),
-        0x1 => instr_mulhsu(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_sltu_mulhu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_sltu(cpu, rd, rs1, rs2),
-        0x1 => instr_mulhu(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_xor_div(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_xor(cpu, rd, rs1, rs2),
-        0x1 => instr_div(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_or_rem(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_or(cpu, rd, rs1, rs2),
-        0x1 => instr_rem(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-fn handle_and_remu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5, funct7: u7) {
-    match funct7.value() {
-        0x0 => instr_and(cpu, rd, rs1, rs2),
-        0x1 => instr_remu(cpu, rd, rs1, rs2),
-        _ => {}
-    }
-}
-
-//-RV32I-
-#[inline(always)]
-fn instr_add(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).wrapping_add(cpu.x_regs.read(rs2)));
-}
-#[inline(always)]
-fn instr_sub(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).wrapping_sub(cpu.x_regs.read(rs2)));
-}
-#[inline(always)]
-pub fn instr_srl(cpu: &mut Cpu, rd: u5, rs1: u5, shamt: u6) {
-    cpu.x_regs.write(rd, cpu.x_regs.read(rs1) >> shamt.value());
-}
-#[inline(always)]
-pub fn instr_sra(cpu: &mut Cpu, rd: u5, rs1: u5, shamt: u6) {
-    cpu.x_regs
-        .write(rd, ((cpu.x_regs.read(rs1) as i64) >> shamt.value()) as u64);
-}
-#[inline(always)]
-fn instr_sll(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    let shamt = (cpu.x_regs.read(rs2) & 0x3f) as u8;
-    cpu.x_regs.write(rd, cpu.x_regs.read(rs1) << shamt);
-}
-#[inline(always)]
-fn instr_slt(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs.write(
-        rd,
-        ((cpu.x_regs.read(rs1) as i64) < (cpu.x_regs.read(rs2) as i64)) as u64,
-    );
-}
-#[inline(always)]
-fn instr_sltu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs
-        .write(rd, (cpu.x_regs.read(rs1) < cpu.x_regs.read(rs2)) as u64);
-}
-#[inline(always)]
-fn instr_xor(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).bitxor(cpu.x_regs.read(rs2)));
-}
-#[inline(always)]
-fn instr_or(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).bitor(cpu.x_regs.read(rs2)));
-}
-#[inline(always)]
-fn instr_and(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs
-        .write(rd, cpu.x_regs.read(rs1).bitand(cpu.x_regs.read(rs2)));
-}
-//-RV32M-
-#[inline(always)]
-fn instr_mul(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    cpu.x_regs.write(
-        rd,
-        (cpu.x_regs.read(rs1) as i64).wrapping_mul(cpu.x_regs.read(rs2) as i64) as u64,
-    );
-}
-#[inline(always)]
-fn instr_mulh(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    //signed×signed
-    cpu.x_regs.write(
-        rd,
-        ((cpu.x_regs.read(rs1) as i128).wrapping_mul(cpu.x_regs.read(rs2) as i128) >> 64) as u64,
-    );
-}
-#[inline(always)]
-fn instr_mulhsu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    //signed×unsigned
-    cpu.x_regs.write(
-        rd,
-        ((cpu.x_regs.read(rs1) as i128 as u128).wrapping_mul(cpu.x_regs.read(rs2) as u128) >> 64)
-            as u64,
-    );
-}
-#[inline(always)]
-fn instr_mulhu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    //unsigned×unsigned
-    cpu.x_regs.write(
-        rd,
-        ((cpu.x_regs.read(rs1) as u128).wrapping_mul(cpu.x_regs.read(rs2) as u128) >> 64) as u64,
-    );
-}
-
-//@ Note: on M extension, the divizion by zero and overflow doesn't raise exceptions,
-// it writes default values instead.
-#[inline(always)]
-fn instr_div(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    let divident = cpu.x_regs.read(rs1);
-    let divisor = cpu.x_regs.read(rs2);
-
-    cpu.x_regs.write(
-        rd,
-        if divisor == 0 {
-            -1i8 as u64
-        } else {
-            (divident as i64).wrapping_div(divisor as i64) as u64
-        },
-    );
-}
-#[inline(always)]
-fn instr_divu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    let divident = cpu.x_regs.read(rs1);
-    let divisor = cpu.x_regs.read(rs2);
-
-    cpu.x_regs.write(
-        rd,
-        if divisor == 0 {
-            -1i8 as u64
-        } else {
-            divident.wrapping_div(divisor)
-        },
-    );
-}
-#[inline(always)]
-fn instr_rem(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    let divident = cpu.x_regs.read(rs1);
-    let divisor = cpu.x_regs.read(rs2);
-
-    cpu.x_regs.write(
-        rd,
-        if divisor == 0 {
-            divident
-        } else {
-            (divident as i64).wrapping_rem(divisor as i64) as u64
-        },
-    );
-}
-#[inline(always)]
-fn instr_remu(cpu: &mut Cpu, rd: u5, rs1: u5, rs2: u5) {
-    let divident = cpu.x_regs.read(rs1);
-    let divisor = cpu.x_regs.read(rs2);
-
-    cpu.x_regs.write(
-        rd,
-        if divisor == 0 {
-            divident
-        } else {
-            divident.wrapping_rem(divisor)
-        },
-    );
 }

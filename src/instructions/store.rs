@@ -9,8 +9,6 @@ pub const SH: u8 = 0x1;
 pub const SW: u8 = 0x2;
 pub const SD: u8 = 0x3;
 
-#[inline(never)]
-
 pub fn handle_store(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let stype = SType::new_with_raw_value(instr);
     let (funct3, rs1, rs2, imm) = (stype.funct3(), stype.rs1(), stype.rs2(), stype.imm());

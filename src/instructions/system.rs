@@ -1,5 +1,3 @@
-use arbitrary_int::{u1, u2, u3, u5};
-
 use crate::{
     components::{
         csr::{MEPC, SEPC},
@@ -8,6 +6,7 @@ use crate::{
     cpu::{Cpu, PrivilegeMode},
     instructions::types::IType,
 };
+use arbitrary_int::{u1, u2, u3, u5};
 
 #[allow(dead_code)]
 /// Read/Write CSR

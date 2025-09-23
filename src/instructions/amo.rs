@@ -1,12 +1,10 @@
-use std::ops::{BitAnd, BitOr, BitXor};
-
-use arbitrary_int::{u3, u5};
-
 use crate::{
     components::{mmu::Size, trap::Exception},
     cpu::Cpu,
     instructions::types::ARType,
 };
+use arbitrary_int::{u3, u5};
+use std::ops::{BitAnd, BitOr, BitXor};
 
 const LR: u8 = 0x2;
 const SC: u8 = 0x3;
