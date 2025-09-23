@@ -4,6 +4,8 @@ mod instruction;
 mod load;
 mod op;
 mod op_imm;
+mod op_immw;
+mod opw;
 mod store;
 mod system;
 mod types;

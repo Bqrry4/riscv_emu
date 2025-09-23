@@ -157,7 +157,8 @@ impl Csr {
 
         csrs[MISA] = (2 << 62) | //MXL[1:0]=2 (MXLEN=XLEN=64)
                     (1 << 12) | //Extensions[12]= M(Integer Multiply/Divide)
-                    (1 << 8); //Extensions[8] = I(RV32I/64I);
+                    (1 << 8) | //Extensions[8] = I(RV32I/64I);
+                    (1 << 0); //Extensions[0] = A(RV32A/64A);
 
         //non-commercial implementation
         csrs[MVENDORID] = 0;

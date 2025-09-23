@@ -22,7 +22,6 @@ const DIVU: (u8, u8) = (0x5, 0x1);
 const REM: (u8, u8) = (0x6, 0x1);
 const REMU: (u8, u8) = (0x7, 0x1);
 
-#[inline(never)]
 pub fn handle_op(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let rtype = RType::new_with_raw_value(instr);
     let (rd, funct3, rs1, rs2, funct7) = (

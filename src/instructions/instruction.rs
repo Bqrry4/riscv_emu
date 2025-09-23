@@ -7,6 +7,8 @@ use crate::components::trap::Exception;
 use crate::cpu::Cpu;
 use crate::instructions::amo::handle_amo;
 use crate::instructions::branch::handle_branch;
+use crate::instructions::op_immw::handle_op_immw;
+use crate::instructions::opw::handle_opw;
 use crate::instructions::store::handle_store;
 use crate::instructions::system::handle_system;
 use crate::instructions::types::{IType, JType, UType};
@@ -36,11 +38,11 @@ pub fn decode_and_execute(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
             // treated as a NO-OP as this implementation is cache-less
         }
         OP_IMM => handle_op_imm(cpu, instr)?,
-        OP_IMMW => {}
+        OP_IMMW => handle_op_immw(cpu, instr)?,
         STORE => handle_store(cpu, instr)?,
         AMO => handle_amo(cpu, instr)?,
         OP => handle_op(cpu, instr)?,
-        OPW => {}
+        OPW => handle_opw(cpu, instr)?,
         LUI => instr_lui(cpu, instr),
         AUIPC => instr_auipc(cpu, instr),
         BRANCH => handle_branch(cpu, instr),
