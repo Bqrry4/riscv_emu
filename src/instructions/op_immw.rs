@@ -1,7 +1,6 @@
-use std::ops::{Shl, Shr};
-
 use crate::{components::trap::Exception, cpu::Cpu, instructions::types::IType};
 use arbitrary_int::i12;
+use std::ops::{Shl, Shr};
 
 const ADDIW: u8 = 0x0;
 const SLLIW: u8 = 0x1;
