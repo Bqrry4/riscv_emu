@@ -1,0 +1,38 @@
+/* https://github.com/devicetree-org/devicetree-specification/tree/main/source */
+/* https://github.com/torvalds/linux/tree/master/Documentation/devicetree/bindings/riscv */
+
+/dts-v1/;
+
+/ {
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	compatible = "riscv-virtio";
+	model = "riscv-virtio,qemu";
+
+	cpus {
+		#address-cells = <0x1>;
+		#size-cells = <0x0>;
+
+		cpu-map {
+			cluster0 {
+				core0 {
+					cpu = <0x1>;
+				};
+			};
+		};
+
+		cpu@0 {
+			phandle = <0x1>;
+			device_type = "cpu";
+			reg = <0x0>;
+			compatible = "riscv";
+			riscv,isa = "rv64imasu";
+			mmu-type = "riscv,sv39";
+		};
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x0 0x20000000>;
+	};
+};
