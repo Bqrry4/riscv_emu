@@ -1,7 +1,29 @@
-use crate::components::{
-    mmu::Size::{self, *},
-    trap::Exception,
+use std::mem;
+
+use crate::{
+    components::{
+        mmu::Size::{self, *},
+        trap::Exception,
+    },
+    cpu::PrivilegeMode,
+    util::any_as_u8_slice,
 };
+
+#[repr(C)]
+struct FwDynamicInfo {
+    ///Info magic
+    magic: u64,
+    ///Info version
+    version: u64,
+    ///Next booting stage address
+    next_addr: u64,
+    ///Next booting stage mode
+    next_mode: u64,
+    ///Options for OpenSBI library
+    options: u64,
+    ///Preferred boot HART id
+    boot_hart: u64,
+}
 
 //TODO: Set a start_pc
 const START_PC: u64 = 0;
@@ -10,26 +32,46 @@ pub struct Mrom {
     memory: Vec<u8>,
 }
 
+//0x8000_0000 - 0x8010_0000 - OPENSBI - 1MB
+
 impl Mrom {
     pub fn new() -> Self {
-        let mut memory: Vec<u32> = vec![0; 64];
+        let mut firmware: Vec<u32> = vec![0; 7];
         //auipc  t0, 0x0
-        memory[0] = 0x00000297;
+        firmware[0] = 0x00000297;
         // addi  a1, t0, &dtb
-        memory[1] = 0;
+        firmware[1] = 0;
         // csrrw  a0, mhartid
-        memory[2] = 0xf1401573;
+        firmware[2] = 0xf1401573;
         // ld  t0, 24(t0)
-        memory[3] = 0;
+        firmware[3] = 0;
         //jalr x0, 0(t0)
-        memory[4] = 0x00028067;
+        firmware[4] = 0x00028067;
         //.data
         // .dword START_PC
-        memory[5] = START_PC as u32;
-        memory[6] = (START_PC >> 32) as u32;
-        Self {
-            memory: memory.into_iter().flat_map(|b| b.to_ne_bytes()).collect(),
-        }
+        firmware[5] = START_PC as u32;
+        firmware[6] = (START_PC >> 32) as u32;
+
+        let d_info = FwDynamicInfo {
+            magic: 0x4942534f,
+            version: 0x2,
+            next_addr: 0,
+            next_mode: PrivilegeMode::Supervisor as u64,
+            options: 0,
+            //We have only one hart
+            boot_hart: 0,
+        };
+
+        let mut memory: Vec<u8> =
+            Vec::with_capacity(firmware.len() * 4 + mem::size_of::<FwDynamicInfo>());
+
+        firmware
+            .into_iter()
+            .for_each(|b| memory.extend_from_slice(&b.to_ne_bytes()));
+
+        let d_info_bytes = unsafe { any_as_u8_slice(&d_info) };
+        memory.extend_from_slice(d_info_bytes);
+        Self { memory: memory }
     }
 
     pub fn read(&self, index: u64, size: Size) -> Result<u64, Exception> {
