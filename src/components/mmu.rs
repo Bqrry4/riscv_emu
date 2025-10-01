@@ -43,11 +43,11 @@ pub enum MemoryAccessType {
 }
 impl MemoryAccessType {
     ///Return coresponding page-fault exception
-    pub fn page_fault(&self) -> Exception {
+    pub fn page_fault(&self, addr: u64) -> Exception {
         match self {
-            MemoryAccessType::Instruction => return Exception::InstructionPageFault,
-            MemoryAccessType::Load => return Exception::LoadPageFault,
-            MemoryAccessType::Store => return Exception::StorePageFault,
+            MemoryAccessType::Instruction => return Exception::InstructionPageFault(addr),
+            MemoryAccessType::Load => return Exception::LoadPageFault(addr),
+            MemoryAccessType::Store => return Exception::StorePageFault(addr),
         }
     }
 }
@@ -186,7 +186,7 @@ impl Mmu {
             //? or if any bits or encodings that are reserved for future standard use are set within pte,
             if pte.v() == u1::new(0) || (pte.r() == u1::new(0) && pte.w() == u1::new(1)) {
                 // stop and raise a page-fault exception corresponding to the original access type.
-                return Err(access.page_fault());
+                return Err(access.page_fault(pte_address));
             }
             // 4. Otherwise, the PTE is valid.
             // If pte.r=1 or pte.x=1, go to step 5.
@@ -198,7 +198,7 @@ impl Mmu {
             i = i - 1;
             // If i<0, stop and raise a page-fault exception corresponding to the original access type.
             if i < 0 {
-                return Err(access.page_fault());
+                return Err(access.page_fault(pte_address));
             }
             // Otherwise, let a=pte.ppn×PAGESIZE and go to step 2.
             a = pte.ppn().value() * PAGESIZE;
@@ -216,7 +216,7 @@ impl Mmu {
                     continue;
                 }
                 // stop and raise a page-fault exception corresponding to the original access type.
-                return Err(access.page_fault());
+                return Err(access.page_fault(pte_address));
             }
         }
         // 6. Determine if the requested memory access is allowed by the pte.u bit,
@@ -225,14 +225,14 @@ impl Mmu {
             PrivilegeMode::User => {
                 if pte.u() == u1::new(0) {
                     // If not, stop and raise a page-fault exception corresponding to the original access type.
-                    return Err(access.page_fault());
+                    return Err(access.page_fault(pte_address));
                 }
             }
             PrivilegeMode::Supervisor => {
                 if pte.u() == u1::new(1) {
                     //When SUM=1, load and store access are permitted for S-mode on U pages.
                     if mstatus.sum() == u1::new(0) || access == MemoryAccessType::Instruction {
-                        return Err(access.page_fault());
+                        return Err(access.page_fault(pte_address));
                     }
                 }
             }
@@ -251,17 +251,17 @@ impl Mmu {
                     // When MXR=1, allow load on X pages.
                     && (mstatus.mxr() == u1::new(0) || pte.x() == u1::new(0))
                 {
-                    return Err(Exception::LoadPageFault);
+                    return Err(Exception::LoadPageFault(pte_address));
                 }
             }
             MemoryAccessType::Store => {
                 if pte.w() == u1::new(0) {
-                    return Err(Exception::StorePageFault);
+                    return Err(Exception::StorePageFault(pte_address));
                 }
             }
             MemoryAccessType::Instruction => {
                 if pte.x() == u1::new(0) {
-                    return Err(Exception::InstructionPageFault);
+                    return Err(Exception::InstructionPageFault(pte_address));
                 }
             }
         };

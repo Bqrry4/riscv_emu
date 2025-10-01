@@ -10,7 +10,7 @@ use crate::components::system_bus::{DRAM_BASE, DRAM_END};
 use crate::components::trap::Exception;
 use crate::instructions::decode_and_execute;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[bitenum(u2, exhaustive = true)]
 pub enum PrivilegeMode {
     User = 0b00,
@@ -71,9 +71,9 @@ impl Cpu {
     }
 
     //TODO: handle exceptions obvs
-    fn handle_exception(&self, e: Exception) {
-        println!("Exception {:?}", e as u8);
-        panic!()
+    fn handle_exception(&mut self, e: Exception) {
+        println!("Exception {:?}", e.code());
+        e.take_trap(self);
     }
 
     pub fn tick(&mut self) {

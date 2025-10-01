@@ -11,7 +11,20 @@ const CSR_SIZE: usize = 1 << 12;
 pub const MSTATUS: usize = 0x300;
 /// ISA and extensions.
 const MISA: usize = 0x301;
-//
+/// Machine exception delegation register.
+pub const MEDELEG: usize = 0x302;
+/// Machine interrupt delegation register.
+pub const MIDELEG: usize = 0x303;
+/// Machine trap-handler base address.
+pub const MTVEC: usize = 0x305;
+// Machine Trap Handling
+/// Machine exception program counter.
+pub const MEPC: usize = 0x341;
+/// Machine trap cause.
+pub const MCAUSE: usize = 0x342;
+pub const MTVAL: usize = 0x343;
+pub const MIP: usize = 0x344;
+
 // Machine information registers
 /// Vendor ID.
 const MVENDORID: usize = 0xf11;
@@ -23,14 +36,23 @@ const MIMPID: usize = 0xf13;
 const MHARTID: usize = 0xf14;
 /// Pointer to configuration data structure.
 const MCONFIGPTR: usize = 0xf15;
-/// Machine exception program counter.
-pub const MEPC: usize = 0x341;
 
 /* --Supervisor-level CSR-- */
+// Supervisor Trap Setup
+/// Supervisor trap handler base address.
+pub const STVEC: usize = 0x105;
+
 /// Supervisor address translation and protection.
 pub const SAPT: usize = 0x180;
+// Supervisor Trap Handling
 /// Supervisor exception program counter.
 pub const SEPC: usize = 0x141;
+/// Supervisor trap cause.
+pub const SCAUSE: usize = 0x142;
+/// Supervisor trap value.
+pub const STVAL: usize = 0x143;
+/// Supervisor interrupt pending.
+pub const SIP: usize = 0x144;
 
 #[bitfield(u64)]
 pub struct MStatus {
