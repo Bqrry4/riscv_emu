@@ -6,7 +6,7 @@ use bitbybit::bitenum;
 use crate::components::csr::{Csr, MSTATUS, SAPT};
 use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
-use crate::components::system_bus::{DRAM_BASE, DRAM_END};
+use crate::components::system_bus::{DRAM_BASE, DRAM_END, MROM_BASE};
 use crate::components::trap::Exception;
 use crate::instructions::decode_and_execute;
 
@@ -49,7 +49,8 @@ impl Cpu {
 
         let cpu = Self {
             x_regs: XRegisters::new(),
-            pc: 0,
+            // start in firmware
+            pc: MROM_BASE,
             mmu: Mmu::new(mstatus, sapt, p_mode.as_ref().get_ref()),
             csr: csr,
             p_mode: p_mode,
@@ -70,7 +71,6 @@ impl Cpu {
         }
     }
 
-    //TODO: handle exceptions obvs
     fn handle_exception(&mut self, e: Exception) {
         println!("Exception {:?}", e.code());
         e.take_trap(self);

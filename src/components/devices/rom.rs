@@ -3,6 +3,7 @@ use std::mem;
 use crate::{
     components::{
         mmu::Size::{self, *},
+        system_bus::DRAM_BASE,
         trap::Exception,
     },
     cpu::PrivilegeMode,
@@ -26,7 +27,7 @@ struct FwDynamicInfo {
 }
 
 //TODO: Set a start_pc
-const START_PC: u64 = 0;
+const START_PC: u64 = DRAM_BASE;
 
 pub struct Mrom {
     memory: Vec<u8>,
@@ -39,13 +40,13 @@ impl Mrom {
         let mut firmware: Vec<u32> = vec![0; 7];
         //auipc  t0, 0x0
         firmware[0] = 0x00000297;
-        // addi  a1, t0, &dtb
-        firmware[1] = 0;
+        // addi  a1, t0, &dtb(0)
+        firmware[1] = 0x00028593;
         // csrrw  a0, mhartid
         firmware[2] = 0xf1401573;
         // ld  t0, 24(t0)
-        firmware[3] = 0;
-        //jalr x0, 0(t0)
+        firmware[3] = 0x0182b283;
+        //jalr x0, 0(t0)h
         firmware[4] = 0x00028067;
         //.data
         // .dword START_PC
@@ -87,6 +88,7 @@ impl Mrom {
             WORD => u32::from_le_bytes(bytes.try_into().unwrap()) as u64,
             DWORD => u64::from_le_bytes(bytes.try_into().unwrap()),
         };
+
         Ok(data)
     }
 }

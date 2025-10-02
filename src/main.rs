@@ -1,23 +1,42 @@
+use argh::FromArgs;
 use cpu::*;
 
-use crate::components::{mmu::Size, system_bus::DRAM_BASE};
+use crate::components::{
+    mmu::Size,
+    system_bus::{DRAM_BASE, KERNEL_REGION, SBI_REGION},
+};
 pub mod cpu;
 
 mod components;
 mod instructions;
 pub mod util;
+
+#[derive(FromArgs)]
+#[argh(description = "?╱|、
+(˚ˎ 。7
+ |、˜〵
+ じしˍ,)ノ")]
+struct Args {
+    /// sbi or binary
+    #[argh(option, short = 'b')]
+    sbi: String,
+
+    /// kernel
+    #[argh(option, short = 'k')]
+    kernel: Option<String>,
+}
+
 fn main() {
+    let args: Args = argh::from_env();
+
     let mut cpu = Cpu::new();
 
-    /* Load the eq of
-     * addi x1, x0, 1
-     * addi x2, x0, 2
-     * add x3, x1, x2
-     */
-    let _ = cpu.mmu.store(DRAM_BASE + 0, 0x00100093, Size::WORD);
-    let _ = cpu.mmu.store(DRAM_BASE + 4, 0x00200113, Size::WORD);
-    let _ = cpu.mmu.store(DRAM_BASE + 8, 0x002081b3, Size::WORD);
-    cpu.pc = DRAM_BASE;
+    let sbi = std::fs::read(args.sbi).unwrap();
+    cpu.mmu.inject(SBI_REGION, &sbi);
+    args.kernel.map(|k| {
+        let kernel = std::fs::read(k).unwrap();
+        cpu.mmu.inject(KERNEL_REGION, &kernel);
+    });
 
     cpu.run();
     cpu.dump_state();

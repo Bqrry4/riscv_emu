@@ -7,6 +7,7 @@ use crate::components::{
     trap::Exception,
 };
 
+/* Device memory mapping */
 // The execution environment determines the mapping of hardware resources into a hart’s address space.
 // Use the ones defined by qemu:
 // https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c
@@ -14,6 +15,9 @@ pub const MROM_BASE: u64 = 0x1000;
 pub const MROM_END: u64 = MROM_BASE + 0xf000;
 pub const DRAM_BASE: u64 = 0x8000_0000;
 pub const DRAM_END: u64 = DRAM_BASE + DRAM_SIZE;
+/* Known memory regions */
+pub const SBI_REGION: u64 = DRAM_BASE;
+pub const KERNEL_REGION: u64 = DRAM_BASE + 0x4_000;
 
 pub struct SystemBus {
     rom: Mrom,
@@ -40,5 +44,9 @@ impl SystemBus {
             DRAM_BASE..=DRAM_END => Ok(self.dram.write(address - DRAM_BASE, size, value)?),
             _ => Err(Exception::StoreAccessFault),
         }
+    }
+
+    pub fn inject(&mut self, address: u64, bin: &[u8]) {
+        self.dram.write_bytes(address - DRAM_BASE, bin);
     }
 }

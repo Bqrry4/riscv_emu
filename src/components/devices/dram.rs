@@ -45,4 +45,11 @@ impl Dram {
 
         Ok(())
     }
+
+    pub fn write_bytes(&mut self, index: u64, bytes: &[u8]) {
+        let start = index as usize;
+        let end = start + bytes.len();
+        assert!(end <= self.memory.len(), "Out of bounds DRAM write");
+        self.memory[index as usize..end].copy_from_slice(bytes);
+    }
 }

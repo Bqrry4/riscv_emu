@@ -16,7 +16,7 @@ const LEVELS: u8 = 3;
 ///Page Table Entry size
 const PTESIZE: u64 = 8;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum Size {
     BYTE = 1,
@@ -317,8 +317,13 @@ impl Mmu {
     }
 
     pub fn store(&mut self, vaddr: u64, value: u64, size: Size) -> Result<(), Exception> {
-        let paddr = self.translate(vaddr, MemoryAccessType::Load)?;
+        let paddr = self.translate(vaddr, MemoryAccessType::Store)?;
         self.bus.write(paddr, size, value)?;
         Ok(())
+    }
+
+    /// Inject a binary file in physical memory
+    pub fn inject(&mut self, addr: u64, bin: &[u8]) {
+        self.bus.inject(addr, bin);
     }
 }
