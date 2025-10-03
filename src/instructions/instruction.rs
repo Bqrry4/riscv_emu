@@ -66,7 +66,13 @@ fn instr_auipc(cpu: &mut Cpu, instr: u32) {
     let utype = UType::new_with_raw_value(instr);
     let (rd, imm) = (utype.rd(), utype.imm());
 
-    cpu.x_regs.write(rd, cpu.pc + (imm as u64));
+    cpu.x_regs.write(
+        rd,
+        cpu.pc
+            //the address of this instruction is 4 bytes behind
+            .wrapping_sub(4)
+            .wrapping_add(imm as u64),
+    );
 }
 
 /* 2.5.1. Unconditional Jumps */
@@ -90,8 +96,6 @@ fn instr_jalr(cpu: &mut Cpu, instr: u32) {
     cpu.pc = cpu
         .x_regs
         .read(rs1)
-        //the address of the jump is 4 bytes behind
-        .wrapping_sub(4)
         .wrapping_add(imm.value() as u64)
         //clear the lsb
         .bitand(!1);

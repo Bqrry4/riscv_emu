@@ -37,7 +37,7 @@ pub struct Mrom {
 
 impl Mrom {
     pub fn new() -> Self {
-        let mut firmware: Vec<u32> = vec![0; 7];
+        let mut firmware: Vec<u32> = vec![0; 8];
         //auipc  t0, 0x0
         firmware[0] = 0x00000297;
         // addi  a1, t0, &dtb(0)
@@ -46,12 +46,12 @@ impl Mrom {
         firmware[2] = 0xf1401573;
         // ld  t0, 24(t0)
         firmware[3] = 0x0182b283;
-        //jalr x0, 0(t0)h
+        //jr t0
         firmware[4] = 0x00028067;
         //.data
         // .dword START_PC
-        firmware[5] = START_PC as u32;
-        firmware[6] = (START_PC >> 32) as u32;
+        firmware[6] = START_PC as u32;
+        firmware[7] = (START_PC >> 32) as u32;
 
         let d_info = FwDynamicInfo {
             magic: 0x4942534f,

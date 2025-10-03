@@ -13,6 +13,8 @@
         localSystem.system = system;
         crossSystem.system = "riscv64-unknown-linux-gnu";
       };
+      rv_isa = "rv64ima_zicsr_zifencei";
+      rv_abi = "lp64";
     in
     {
       packages.${system} = {
@@ -36,8 +38,8 @@
             "PLATFORM=generic"
             "FW_DYNAMIC=y"
             "PLATFORM_RISCV_XLEN=64"
-            "PLATFORM_RISCV_ISA=rv64ima_zicsr_zifencei"
-            "PLATFORM_RISCV_ABI=lp64"
+            "PLATFORM_RISCV_ISA=${rv_isa}"
+            "PLATFORM_RISCV_ABI=${rv_abi}"
             "CROSS_COMPILE=${pkgs.stdenv.cc.targetPrefix}"
           ];
 
@@ -71,6 +73,28 @@
           installPhase = ''
             mkdir -p $out
             mv virt.dtb $out/
+          '';
+        };
+
+        test_asm = pkgs.stdenv.mkDerivation {
+          name = "test_asm";
+
+          src = ./../tests/asm;
+
+          nativeBuildInputs = [
+            pkgs.buildPackages.gcc
+          ];
+
+          buildPhase = ''
+            for f in $(ls $src/*.s); do
+                name=$(basename $f .s)
+                riscv64-unknown-linux-gnu-gcc -nostdlib -nostartfiles -Ttext=0x80000000 $f -o $name.elf -march=${rv_isa} -mabi=${rv_abi}
+                riscv64-unknown-linux-gnu-objcopy -O binary $name.elf $name.bin
+            done
+          '';
+          installPhase = ''
+            mkdir -p $out
+            mv *.bin $out/
           '';
         };
       };

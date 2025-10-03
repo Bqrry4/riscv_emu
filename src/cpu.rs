@@ -59,14 +59,13 @@ impl Cpu {
         };
         cpu
     }
-
     pub fn run(&mut self) {
         loop {
-            //TODO: remove hardcoded condition
-            if self.pc >= DRAM_BASE + 8 as u64 {
-                println!("Reached end of code");
-                return;
-            }
+            // //TODO: remove hardcoded condition
+            // if self.pc >= DRAM_BASE + 8 as u64 {
+            //     println!("Reached end of code");
+            //     return;
+            // }
             self.tick();
         }
     }
