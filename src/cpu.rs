@@ -60,14 +60,10 @@ impl Cpu {
         cpu
     }
     pub fn run(&mut self) {
-        loop {
-            // //TODO: remove hardcoded condition
-            // if self.pc >= DRAM_BASE + 8 as u64 {
-            //     println!("Reached end of code");
-            //     return;
-            // }
+        while self.mmu.bus.test.exit == 0 {
             self.tick();
         }
+        println!("Exited with {}", self.mmu.bus.test.exit);
     }
 
     fn handle_exception(&mut self, e: Exception) {
@@ -93,6 +89,5 @@ impl Cpu {
     pub fn dump_state(&self) {
         println!("Xreg: {:?}", self.x_regs);
         println!("PC: {}", self.pc);
-        println!("MEM: {:?}", self.mmu.memory);
     }
 }

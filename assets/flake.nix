@@ -86,12 +86,16 @@
           ];
 
           buildPhase = ''
+            riscv64-unknown-linux-gnu-gcc -c include/exit.s -o exit.o -march=${rv_isa} -mabi=${rv_abi}
             for f in $(ls $src/*.s); do
                 name=$(basename $f .s)
-                riscv64-unknown-linux-gnu-gcc -nostdlib -nostartfiles -Ttext=0x80000000 $f -o $name.elf -march=${rv_isa} -mabi=${rv_abi}
+                riscv64-unknown-linux-gnu-gcc -c $f -o $name.o -march=${rv_isa} -mabi=${rv_abi}
+                # put the file with _start first for it to be the direct entry
+                riscv64-unknown-linux-gnu-ld -Ttext=0x80000000 -o $name.elf $name.o exit.o
                 riscv64-unknown-linux-gnu-objcopy -O binary $name.elf $name.bin
             done
           '';
+
           installPhase = ''
             mkdir -p $out
             mv *.bin $out/

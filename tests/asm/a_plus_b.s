@@ -1,6 +1,8 @@
     .text
     .globl _start
 _start:
-    addi x1, x0, 1
-    addi x2, x0, 2
-    add  x3, x1, x2
+    addi t3, zero, 1
+    addi t4, zero, 2
+    add  t5, t4, t3
+
+    call exit

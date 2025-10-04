@@ -128,7 +128,6 @@ pub struct Sv39pte {
 }
 
 pub struct Mmu {
-    pub memory: [u8; 256],
     pub bus: SystemBus,
     //Use raw pointers for now, as self-referencing is a pita
     mstatus: *const u64,
@@ -140,7 +139,6 @@ impl Mmu {
     pub fn new(mstatus: *const u64, sapt: *const u64, p_mode: *const PrivilegeMode) -> Self {
         Self {
             //Fill this with NOPs, which is 0x13 on riscv
-            memory: [0; 256],
             bus: SystemBus::new(),
             mstatus,
             sapt,
