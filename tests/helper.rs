@@ -1,5 +1,8 @@
 use std::{fs, path::PathBuf};
 
+use arbitrary_int::u5;
+use risc_v::cpu::Cpu;
+
 pub fn load_binary(name: &str) -> Vec<u8> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("assets/result")
@@ -23,4 +26,10 @@ macro_rules! define_test {
             $body;
         }
     };
+}
+
+pub fn assert_xregs(cpu: &Cpu, expected: &[(u5, u64)]) {
+    for (reg, val) in expected {
+        assert_eq!(cpu.x_regs.read(*reg), *val);
+    }
 }

@@ -87,7 +87,7 @@
 
           buildPhase = ''
             riscv64-unknown-linux-gnu-gcc -c include/exit.s -o exit.o -march=${rv_isa} -mabi=${rv_abi}
-            for f in $(ls $src/*.s); do
+            for f in $(find $src/rv64*/ -name "*.s"); do
                 name=$(basename $f .s)
                 riscv64-unknown-linux-gnu-gcc -c $f -o $name.o -march=${rv_isa} -mabi=${rv_abi}
                 # put the file with _start first for it to be the direct entry
