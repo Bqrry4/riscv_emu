@@ -52,11 +52,11 @@ pub fn handle_op(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
         MUL => (lhs as i64).wrapping_mul(rhs as i64) as u64,
         MULH => {
             //signed×signed
-            ((lhs as i128).wrapping_mul(rhs as i128) >> 64) as u64
+            ((lhs as i64 as i128).wrapping_mul(rhs as i64 as i128) >> 64) as u64
         }
         MULHSU => {
             //signed×unsigned
-            ((lhs as i128 as u128).wrapping_mul(rhs as u128) >> 64) as u64
+            ((lhs as i64 as i128 as u128).wrapping_mul(rhs as u128) >> 64) as u64
         }
         MULHU => {
             //unsigned×unsigned
