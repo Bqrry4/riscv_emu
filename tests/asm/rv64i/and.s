@@ -3,6 +3,7 @@
 _start:
     li t3, 0b0101
     li t4, 0b1010
-    and  t5, t4, t3
+    and  t5, t3, t4
+    andi t5, t3, 0b1010
 
     call exit

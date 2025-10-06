@@ -53,6 +53,7 @@ define_test!(sll, |cpu| {
             (XRegisters::t3, 1),
             (XRegisters::t4, 2),
             (XRegisters::t5, 4),
+            (XRegisters::t6, 4),
         ],
     );
 });
@@ -63,6 +64,7 @@ define_test!(slt, |cpu| {
             (XRegisters::t3, (-366_i64) as u64),
             (XRegisters::t4, 366),
             (XRegisters::t5, 1),
+            (XRegisters::t6, 1),
         ],
     );
 });
@@ -73,6 +75,7 @@ define_test!(sltu, |cpu| {
             (XRegisters::t3, (-366_i64) as u64),
             (XRegisters::t4, 366),
             (XRegisters::t5, 0),
+            (XRegisters::t6, 0),
         ],
     );
 });
@@ -83,6 +86,7 @@ define_test!(xor, |cpu| {
             (XRegisters::t3, 0b1001),
             (XRegisters::t4, 0b0101),
             (XRegisters::t5, 0b1100),
+            (XRegisters::t6, 0b1100),
         ],
     );
 });
@@ -93,6 +97,7 @@ define_test!(sra, |cpu| {
             (XRegisters::t3, u64::MAX),
             (XRegisters::t4, 1),
             (XRegisters::t5, u64::MAX),
+            (XRegisters::t6, u64::MAX),
         ],
     );
 });
@@ -103,6 +108,7 @@ define_test!(srl, |cpu| {
             (XRegisters::t3, u64::MAX),
             (XRegisters::t4, 1),
             (XRegisters::t5, u64::MAX >> 1),
+            (XRegisters::t6, u64::MAX >> 1),
         ],
     );
 });
@@ -113,6 +119,7 @@ define_test!(or, |cpu| {
             (XRegisters::t3, 0b0101),
             (XRegisters::t4, 0b1010),
             (XRegisters::t5, 0b1111),
+            (XRegisters::t6, 0b1111),
         ],
     );
 });
@@ -123,6 +130,7 @@ define_test!(and, |cpu| {
             (XRegisters::t3, 0b0101),
             (XRegisters::t4, 0b1010),
             (XRegisters::t5, 0b0000),
+            (XRegisters::t6, 0b0000),
         ],
     );
 });

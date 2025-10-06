@@ -4,5 +4,6 @@ _start:
     li t3, -1
     li t4, 1
     srl  t5, t3, t4
+    srli t6, t3, 1
 
     call exit
