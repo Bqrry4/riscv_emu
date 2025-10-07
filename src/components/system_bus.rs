@@ -9,7 +9,7 @@ use crate::components::{
 };
 
 /* Device memory mapping */
-// The execution environment determines the mapping of hardware resources into a hart’s address space.
+//& The execution environment determines the mapping of hardware resources into a hart’s address space.
 // Use the ones defined by qemu:
 // https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c
 pub const MROM_BASE: u64 = 0x1000;
