@@ -1,10 +1,10 @@
     .text
     .globl _start
 _start:
-    la t3, dword
-    li t4, 0x0101010101010101
-    sd t4, 0(t3)
-    ld t5, 0(t3)
+    la s1, dword
+    li s2, 0x0101010101010101
+    sd s2, 4(s1)
+    ld s3, 4(s1)
 
     call exit
 

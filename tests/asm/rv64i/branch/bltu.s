@@ -1,14 +1,14 @@
     .text
     .globl _start
 _start:
-    li t3, -366
-    li t4, 366
+    li s1, -366
+    li s2, 366
 
-    bltu t3, t4, true
+    bltu s1, s2, true
 
-    li t5, 0
+    li s3, 0
     j done
 true:
-    li t5, 1
+    li s3, 1
 done:
     call exit

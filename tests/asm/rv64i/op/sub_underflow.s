@@ -1,8 +1,10 @@
     .text
     .globl _start
 _start:
-    li t3, 0
-    li t4, 1
-    sub  t5, t3, t4
+    li s1, 0
+    li s2, 1
+
+    sub  s3, s1, s2
+    subw s6, s1, s2
 
     call exit

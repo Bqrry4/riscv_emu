@@ -1,9 +1,9 @@
     .text
     .globl _start
 _start:
-    addi t3, zero, -366
-    addi t4, zero, 366
-    slt  t5, t3, t4
-    slti t6, t3, 366
+    addi s1, zero, -366
+    addi s2, zero, 366
+    slt  s3, s1, s2
+    slti s4, s1, 366
 
     call exit
