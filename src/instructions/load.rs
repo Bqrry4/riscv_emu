@@ -7,11 +7,11 @@ use crate::{
 pub const LB: u8 = 0x0;
 pub const LH: u8 = 0x1;
 pub const LW: u8 = 0x2;
-pub const LD: u8 = 0x3;
+pub const _LD: u8 = 0x3;
 //Interesting pattern of the bit[2], which tells if the sign extension is performed
-pub const LBU: u8 = 0x4;
-pub const LHU: u8 = 0x5;
-pub const LWU: u8 = 0x6;
+pub const _LBU: u8 = 0x4;
+pub const _LHU: u8 = 0x5;
+pub const _LWU: u8 = 0x6;
 
 pub fn handle_load(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let itype = IType::new_with_raw_value(instr);

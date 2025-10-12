@@ -16,9 +16,9 @@ pub const CSRRS: u8 = 0x2;
 /// Read and Clear Bits in CSR
 pub const CSRRC: u8 = 0x3;
 /// Same as the above, except bit[2] tells the rsi is an imm value
-pub const CSRRWI: u8 = 0x5;
-pub const CSRRSI: u8 = 0x6;
-pub const CSRRCI: u8 = 0x7;
+pub const _CSRRWI: u8 = 0x5;
+pub const _CSRRSI: u8 = 0x6;
+pub const _CSRRCI: u8 = 0x7;
 /// Used to return from a trap taken into S-mode
 pub const SRET: u16 = 0x102;
 /// Used to return from a trap taken into M-mode

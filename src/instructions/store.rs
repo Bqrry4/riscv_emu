@@ -4,10 +4,10 @@ use crate::{
     instructions::types::SType,
 };
 
-pub const SB: u8 = 0x0;
-pub const SH: u8 = 0x1;
-pub const SW: u8 = 0x2;
-pub const SD: u8 = 0x3;
+pub const _SB: u8 = 0x0;
+pub const _SH: u8 = 0x1;
+pub const _SW: u8 = 0x2;
+pub const _SD: u8 = 0x3;
 
 pub fn handle_store(cpu: &mut Cpu, instr: u32) -> Result<(), Exception> {
     let stype = SType::new_with_raw_value(instr);

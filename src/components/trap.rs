@@ -1,6 +1,4 @@
-use std::u64::MAX;
-
-use arbitrary_int::{Int, u1};
+use arbitrary_int::u1;
 
 use crate::{
     components::csr::{MCAUSE, MEDELEG, MEPC, MIDELEG, MTVAL, MTVEC, SCAUSE, SEPC, STVAL, STVEC},

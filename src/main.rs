@@ -1,10 +1,7 @@
 use argh::FromArgs;
 use cpu::*;
 
-use crate::components::{
-    mmu::Size,
-    system_bus::{DRAM_BASE, KERNEL_REGION, SBI_REGION},
-};
+use crate::components::system_bus::{KERNEL_REGION, SBI_REGION};
 pub mod cpu;
 
 mod components;

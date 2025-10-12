@@ -5,6 +5,7 @@ pub struct XRegisters {
     xregs: [u64; 32],
 }
 
+#[allow(non_upper_case_globals)]
 impl XRegisters {
     pub const zero: u5 = u5::new(0);
     pub const ra: u5 = u5::new(1);
