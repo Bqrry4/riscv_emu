@@ -6,7 +6,7 @@ use bitbybit::bitenum;
 use crate::components::csr::{Csr, MSTATUS, SAPT};
 use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
-use crate::components::system_bus::{DRAM_BASE, DRAM_END, MROM_BASE};
+use crate::components::system_bus::MROM_BASE;
 use crate::components::trap::Exception;
 use crate::instructions::decode_and_execute;
 

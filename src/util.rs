@@ -1,3 +1,5 @@
+use arbitrary_int::u1;
+
 #[macro_export]
 macro_rules! sign_extend {
     ($value:expr, $sign_bit:expr) => {{
@@ -13,3 +15,6 @@ pub unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
         ::core::slice::from_raw_parts((p as *const T) as *const u8, ::core::mem::size_of::<T>())
     }
 }
+
+pub const T: u1 = u1::new(1);
+pub const F: u1 = u1::new(0);
