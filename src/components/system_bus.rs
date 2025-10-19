@@ -1,6 +1,7 @@
 use crate::components::{
     devices::{
         dram::{DRAM_SIZE, Dram},
+        plic::Plic,
         rom::Mrom,
         test::Test,
         uart::{UART_SIZE, Uart},
@@ -17,6 +18,8 @@ pub const MROM_BASE: u64 = 0x1000;
 pub const MROM_END: u64 = MROM_BASE + 0xf000;
 pub const TEST_BASE: u64 = 0x10_0000;
 pub const TEST_END: u64 = TEST_BASE + 0x1000;
+pub const PLIC_BASE: u64 = 0xc00_0000;
+pub const PLIC_END: u64 = 0xc00_0000 + 0x20_8000;
 pub const UART0_BASE: u64 = 0x1000_0000;
 pub const UART0_END: u64 = UART0_BASE + UART_SIZE;
 pub const DRAM_BASE: u64 = 0x8000_0000;
@@ -30,6 +33,7 @@ pub struct SystemBus {
     pub test: Test,
     dram: Dram,
     uart0: Uart,
+    plic: Plic,
 }
 
 impl SystemBus {
@@ -39,14 +43,16 @@ impl SystemBus {
             test: Test::new(),
             dram: Dram::new(),
             uart0: Uart::new(),
+            plic: Plic::new(),
         }
     }
 
     pub fn read(&mut self, address: u64, size: Size) -> Result<u64, Exception> {
         match address {
-            MROM_BASE..=MROM_END => Ok(self.rom.read(address - MROM_BASE, size)?),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.read(address - DRAM_BASE, size)?),
-            UART0_BASE..=UART0_END => match size {
+            MROM_BASE..MROM_END => Ok(self.rom.read(address - MROM_BASE, size)?),
+            DRAM_BASE..DRAM_END => Ok(self.dram.read(address - DRAM_BASE, size)?),
+            PLIC_BASE..PLIC_END => Ok(self.plic.read(address - PLIC_BASE, size)?),
+            UART0_BASE..UART0_END => match size {
                 Size::BYTE => Ok(self.uart0.read(address - UART0_BASE)? as u64),
                 _ => Err(Exception::LoadAccessFault),
             },
@@ -55,9 +61,10 @@ impl SystemBus {
     }
     pub fn write(&mut self, address: u64, size: Size, value: u64) -> Result<(), Exception> {
         match address {
-            TEST_BASE..=TEST_END => Ok(self.test.write(address - TEST_BASE, size, value)),
-            DRAM_BASE..=DRAM_END => Ok(self.dram.write(address - DRAM_BASE, size, value)?),
-            UART0_BASE..=UART0_END => match size {
+            TEST_BASE..TEST_END => Ok(self.test.write(address - TEST_BASE, size, value)),
+            DRAM_BASE..DRAM_END => Ok(self.dram.write(address - DRAM_BASE, size, value)?),
+            PLIC_BASE..PLIC_END => Ok(self.plic.write(address - PLIC_BASE, size, value)?),
+            UART0_BASE..UART0_END => match size {
                 Size::BYTE => Ok(self.uart0.write(address - UART0_BASE, value as u8)?),
                 _ => Err(Exception::StoreAccessFault),
             },
