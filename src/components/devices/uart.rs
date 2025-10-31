@@ -11,6 +11,7 @@ use crate::{
 
 /// Size of the addressable region
 pub const UART_SIZE: u64 = 0x100;
+pub const IRQ_UART: u32 = 0x0a;
 
 /* uart register addresses*/
 /// Receiver Buffer (read)
@@ -228,6 +229,10 @@ impl Uart {
 
             reg: [0; UART_SIZE as usize],
         }
+    }
+
+    pub fn is_interrupting(&self) -> bool {
+        self.intr
     }
 
     fn update_iir(&mut self) {

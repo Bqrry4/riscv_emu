@@ -15,6 +15,8 @@ const MISA: usize = 0x301;
 pub const MEDELEG: usize = 0x302;
 /// Machine interrupt delegation register.
 pub const MIDELEG: usize = 0x303;
+/// Machine interrupt-enable register.
+pub const MIE: usize = 0x304;
 /// Machine trap-handler base address.
 pub const MTVEC: usize = 0x305;
 // Machine Trap Handling
@@ -22,7 +24,9 @@ pub const MTVEC: usize = 0x305;
 pub const MEPC: usize = 0x341;
 /// Machine trap cause.
 pub const MCAUSE: usize = 0x342;
+/// Machine trap value.
 pub const MTVAL: usize = 0x343;
+/// Machine interrupt pending.
 pub const MIP: usize = 0x344;
 
 // Machine information registers
@@ -127,38 +131,6 @@ pub struct MStatus {
     sie: u1,
 }
 
-///A restricted view of mstatus
-#[bitfield(u64)]
-pub struct SStatus {
-    #[bit(63, r)]
-    sd: u1,
-    #[bits(32..=33, r)]
-    uxl: u2,
-    #[bit(24, r)]
-    sdt: u1,
-    #[bit(23, r)]
-    spelp: u1,
-    #[bit(19, r)]
-    mxr: u1,
-    #[bit(18, r)]
-    sum: u1,
-    #[bits(15..=16, r)]
-    xs: u2,
-    #[bits(13..=14, r)]
-    fs: u2,
-    #[bits(9..=10, r)]
-    vs: u2,
-    #[bit(8, rw)]
-    spp: u1,
-    #[bit(6, r)]
-    ube: u1,
-    #[bit(5, rw)]
-    spie: u1,
-    /// S-mode Interrupt-Enable
-    #[bit(1, rw)]
-    sie: u1,
-}
-
 #[bitfield(u64)]
 pub struct Sapt {
     #[bits(60..=63, r)]
@@ -167,6 +139,24 @@ pub struct Sapt {
     asid: u16,
     #[bits(0..=43, r)]
     ppn: u44,
+}
+
+#[bitfield(u64)]
+pub struct MIP {
+    #[bit(13, r)]
+    lcofip: u1,
+    #[bit(11, rw)]
+    meip: u1,
+    #[bit(9, rw)]
+    seip: u1,
+    #[bit(7, rw)]
+    mtip: u1,
+    #[bit(5, rw)]
+    stip: u1,
+    #[bit(3, rw)]
+    msip: u1,
+    #[bit(1, rw)]
+    ssip: u1,
 }
 
 pub struct Csr {
@@ -210,14 +200,6 @@ impl Csr {
     }
 
     pub fn write_mstatus(&mut self, value: &MStatus) {
-        self.csrs[MSTATUS] = value.raw_value();
-    }
-
-    pub fn read_sstatus(&self) -> SStatus {
-        SStatus::new_with_raw_value(self.csrs[MSTATUS])
-    }
-
-    pub fn write_sstatus(&mut self, value: &SStatus) {
         self.csrs[MSTATUS] = value.raw_value();
     }
 }

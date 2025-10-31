@@ -32,8 +32,8 @@ pub struct SystemBus {
     rom: Mrom,
     pub test: Test,
     dram: Dram,
-    uart0: Uart,
-    plic: Plic,
+    pub uart0: Uart,
+    pub plic: Plic,
 }
 
 impl SystemBus {
@@ -51,11 +51,12 @@ impl SystemBus {
         match address {
             MROM_BASE..MROM_END => Ok(self.rom.read(address - MROM_BASE, size)?),
             DRAM_BASE..DRAM_END => Ok(self.dram.read(address - DRAM_BASE, size)?),
-            PLIC_BASE..PLIC_END => Ok(self.plic.read(address - PLIC_BASE, size)?),
-            UART0_BASE..UART0_END => match size {
-                Size::BYTE => Ok(self.uart0.read(address - UART0_BASE)? as u64),
-                _ => Err(Exception::LoadAccessFault),
-            },
+            UART0_BASE..UART0_END if size == Size::BYTE => {
+                Ok(self.uart0.read(address - UART0_BASE)? as u64)
+            }
+            PLIC_BASE..PLIC_END if size == Size::WORD => {
+                Ok(self.plic.read(address - PLIC_BASE)? as u64)
+            }
             _ => Err(Exception::LoadAccessFault),
         }
     }
@@ -63,11 +64,12 @@ impl SystemBus {
         match address {
             TEST_BASE..TEST_END => Ok(self.test.write(address - TEST_BASE, size, value)),
             DRAM_BASE..DRAM_END => Ok(self.dram.write(address - DRAM_BASE, size, value)?),
-            PLIC_BASE..PLIC_END => Ok(self.plic.write(address - PLIC_BASE, size, value)?),
-            UART0_BASE..UART0_END => match size {
-                Size::BYTE => Ok(self.uart0.write(address - UART0_BASE, value as u8)?),
-                _ => Err(Exception::StoreAccessFault),
-            },
+            UART0_BASE..UART0_END if size == Size::BYTE => {
+                Ok(self.uart0.write(address - UART0_BASE, value as u8)?)
+            }
+            PLIC_BASE..PLIC_END if size == Size::WORD => {
+                Ok(self.plic.write(address - PLIC_BASE, value as u32)?)
+            }
             _ => Err(Exception::StoreAccessFault),
         }
     }

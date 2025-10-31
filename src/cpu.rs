@@ -3,12 +3,14 @@ use std::pin::Pin;
 use arbitrary_int::u2;
 use bitbybit::bitenum;
 
-use crate::components::csr::{Csr, MSTATUS, SAPT};
+use crate::components::csr::{Csr, MIE, MIP, MSTATUS, SAPT};
+use crate::components::devices::uart::IRQ_UART;
 use crate::components::mmu::Mmu;
 use crate::components::registers::XRegisters;
 use crate::components::system_bus::MROM_BASE;
-use crate::components::trap::Exception;
+use crate::components::trap::{Exception, Interrupt};
 use crate::instructions::decode_and_execute;
+use crate::util::{F, T};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[bitenum(u2, exhaustive = true)]
@@ -71,7 +73,73 @@ impl Cpu {
         e.take_trap(self);
     }
 
+    fn handle_interrupt(&mut self) {
+        match *self.p_mode {
+            PrivilegeMode::Machine => {
+                if self.csr.read_mstatus().mie() == F {
+                    // Machine mode interrupt disabled
+                    return;
+                }
+            }
+            PrivilegeMode::Supervisor => {
+                if self.csr.read_mstatus().sie() == F {
+                    // Supervisor mode interrupt disabled
+                    return;
+                }
+            }
+            _ => {}
+        }
+
+        let irq: u32 = if self.mmu.bus.uart0.is_interrupting() {
+            IRQ_UART
+        } else {
+            return;
+        };
+        self.mmu.bus.plic.set_pending(irq, true);
+        let pending = MIP::new_with_raw_value(self.csr.read(MIP) & self.csr.read(MIE));
+
+        let interrupt: Option<Interrupt> = match pending {
+            mut p if p.meip() == T => {
+                p.set_meip(F);
+                Some(Interrupt::MachineExternal)
+            }
+            mut p if p.msip() == T => {
+                p.set_msip(F);
+                Some(Interrupt::MachineSoftware)
+            }
+            mut p if p.mtip() == T => {
+                p.set_mtip(F);
+                Some(Interrupt::MachineTimer)
+            }
+            mut p if p.seip() == T => {
+                p.set_seip(F);
+                Some(Interrupt::SupervisorExternal)
+            }
+            mut p if p.ssip() == T => {
+                p.set_ssip(F);
+                Some(Interrupt::SupervisorSoftware)
+            }
+            mut p if p.stip() == T => {
+                p.set_stip(F);
+                Some(Interrupt::SupervisorTimer)
+            }
+            _ => None,
+        };
+        // Writeback MIP
+        self.csr.write(MIP, pending.raw_value());
+
+        if let Some(interrupt) = interrupt {
+            interrupt.take_trap(self);
+        }
+    }
+
     pub fn tick(&mut self) {
+        self.handle_interrupt();
+
+        if self.is_idle {
+            return;
+        }
+
         //exception block
         let _ = (|| -> Result<(), Exception> {
             // IF - instruction fetch stage

@@ -16,7 +16,7 @@ const LEVELS: u8 = 3;
 ///Page Table Entry size
 const PTESIZE: u64 = 8;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum Size {
     BYTE = 1,
